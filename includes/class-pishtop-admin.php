@@ -31,6 +31,8 @@ class Admin {
 		add_action( 'wp_ajax_pishtop_get_logs', [ $this, 'ajax_get_logs' ] );
 		add_action( 'wp_ajax_pishtop_bulk_index', [ $this, 'ajax_bulk_index' ] );
 		add_action( 'wp_ajax_pishtop_load_models', [ $this, 'ajax_load_models' ] );
+		add_action( 'wp_ajax_pishtop_save_settings', [ $this, 'ajax_save_settings' ] );
+		add_action( 'wp_ajax_pishtop_save_templates', [ $this, 'ajax_save_templates' ] );
 	}
 
 	public function register_menu_page() {
@@ -341,5 +343,47 @@ Rules:
 			'embeddings' => $embeddings,
 			'rankings'   => $rankings,
 		] );
+	}
+
+	public function ajax_save_settings() {
+		check_ajax_referer( 'pishtop_admin_action', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+
+		$settings = isset( $_POST['pishtop_ai_settings'] ) ? $_POST['pishtop_ai_settings'] : [];
+		$sanitized = $this->sanitize_settings( $settings );
+		
+		update_option( 'pishtop_ai_settings', $sanitized );
+		
+		wp_send_json_success( __( 'Settings saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
+	}
+
+	public function ajax_save_templates() {
+		check_ajax_referer( 'pishtop_admin_action', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+
+		if ( empty( $_POST['templates'] ) || ! is_array( $_POST['templates'] ) ) {
+			wp_send_json_error( __( 'No templates data received.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+
+		$updated_templates = [];
+		foreach ( $_POST['templates'] as $tpl ) {
+			if ( empty( $tpl['id'] ) ) {
+				continue;
+			}
+			$id = sanitize_key( $tpl['id'] );
+			$updated_templates[ $id ] = [
+				'id'           => $id,
+				'wrapper_html' => wp_kses_post( wp_unslash( $tpl['wrapper_html'] ) ),
+				'item_html'    => wp_kses_post( wp_unslash( $tpl['item_html'] ) ),
+				'custom_css'   => wp_strip_all_tags( wp_unslash( $tpl['custom_css'] ) ),
+			];
+		}
+
+		update_option( 'pishtop_ai_templates', $updated_templates );
+		wp_send_json_success( __( 'Templates saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
 	}
 }

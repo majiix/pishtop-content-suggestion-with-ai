@@ -1,4 +1,42 @@
 jQuery(document).ready(function($) {
+	// Toast Notification Utility
+	function showNotification(message, type) {
+		var container = $('#pishtop-toast-container');
+		if (!container.length) {
+			container = $('<div id="pishtop-toast-container"></div>');
+			$('body').append(container);
+		}
+
+		var toast = $('<div class="pishtop-toast toast-' + type + '">' +
+			'<span class="toast-message">' + message + '</span>' +
+			'<span class="toast-close">&times;</span>' +
+		'</div>');
+
+		container.append(toast);
+
+		// Fade in
+		setTimeout(function() {
+			toast.addClass('show');
+		}, 10);
+
+		// Auto close after 4 seconds
+		var timeout = setTimeout(function() {
+			closeToast(toast);
+		}, 4000);
+
+		toast.find('.toast-close').on('click', function() {
+			clearTimeout(timeout);
+			closeToast(toast);
+		});
+	}
+
+	function closeToast(toast) {
+		toast.removeClass('show');
+		setTimeout(function() {
+			toast.remove();
+		}, 300);
+	}
+
 	// Tab Switching
 	$('.pishtop-tabs-nav a').on('click', function(e) {
 		e.preventDefault();
@@ -54,7 +92,7 @@ jQuery(document).ready(function($) {
 
 	loadOpenRouterModels();
 
-	// Confirm action helper
+	// Confirm action helper with Toasts
 	function runAjaxAction(btnId, actionName, dataPayload, successCallback) {
 		var $btn = $('#' + btnId);
 		var $spinner = $btn.find('.btn-spinner');
@@ -79,17 +117,17 @@ jQuery(document).ready(function($) {
 			$spinner.addClass('hidden');
 			$btn.removeClass('disabled');
 			if (response.success) {
-				alert(response.data);
+				showNotification(response.data, 'success');
 				if (successCallback) {
 					successCallback(response.data);
 				}
 			} else {
-				alert('Error: ' + (response.data || 'Unknown error.'));
+				showNotification(response.data || 'Action failed.', 'error');
 			}
 		}).fail(function() {
 			$spinner.addClass('hidden');
 			$btn.removeClass('disabled');
-			alert('Request failed. Please try again.');
+			showNotification('Network request failed.', 'error');
 		});
 	}
 
@@ -100,7 +138,9 @@ jQuery(document).ready(function($) {
 
 	$('#pishtop-clear-embeddings').on('click', function() {
 		runAjaxAction('pishtop-clear-embeddings', 'pishtop_clear_embeddings', {}, function() {
-			location.reload();
+			setTimeout(function() {
+				location.reload();
+			}, 1000);
 		});
 	});
 
@@ -110,17 +150,128 @@ jQuery(document).ready(function($) {
 		});
 	});
 
+	// Collapsible Cards & Copy Shortcode Logic
+	$(document).on('click', '.pishtop-btn-toggle-collapse', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		var card = $(this).closest('.template-item-card');
+		card.toggleClass('collapsed');
+		if (card.hasClass('collapsed')) {
+			$(this).text('Expand');
+		} else {
+			$(this).text('Collapse');
+		}
+	});
+
+	$(document).on('click', '.template-card-header-bar', function(e) {
+		// Ignore if click was on actions buttons
+		if ($(e.target).closest('.template-header-actions').length) {
+			return;
+		}
+		$(this).find('.pishtop-btn-toggle-collapse').trigger('click');
+	});
+
+	$(document).on('input', '.template-id-input', function() {
+		var val = $(this).val() || '(New Template)';
+		var card = $(this).closest('.template-item-card');
+		card.find('.template-title-value').text(val);
+		card.find('.pishtop-btn-copy-shortcode').attr('data-id', val);
+	});
+
+	$(document).on('click', '.pishtop-btn-copy-shortcode', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		var id = $(this).attr('data-id');
+		if (!id) {
+			showNotification('Please define a Template ID first.', 'error');
+			return;
+		}
+		var shortcode = '[pishtop_suggestions template="' + id + '"]';
+		
+		var $temp = $('<input>');
+		$('body').append($temp);
+		$temp.val(shortcode).select();
+		document.execCommand('copy');
+		$temp.remove();
+
+		var $btn = $(this);
+		var oldText = $btn.text();
+		$btn.text('Copied!');
+		$btn.addClass('success-pulse');
+		setTimeout(function() {
+			$btn.text(oldText);
+			$btn.removeClass('success-pulse');
+		}, 1500);
+
+		showNotification('Copied: ' + shortcode, 'success');
+	});
+
+	// AJAX settings form submit
+	$('#pishtop-settings-form').on('submit', function(e) {
+		e.preventDefault();
+		var form = $(this);
+		var btn = form.find('.pishtop-save-btn');
+		btn.addClass('disabled').prop('disabled', true);
+		
+		var formData = form.serializeArray();
+		formData.push({ name: 'action', value: 'pishtop_save_settings' });
+		formData.push({ name: 'nonce', value: pishtopSettings.nonce });
+		
+		$.post(pishtopSettings.ajaxUrl, formData, function(response) {
+			btn.removeClass('disabled').prop('disabled', false);
+			if (response.success) {
+				showNotification(response.data, 'success');
+			} else {
+				showNotification(response.data || 'Failed to save settings.', 'error');
+			}
+		}).fail(function() {
+			btn.removeClass('disabled').prop('disabled', false);
+			showNotification('Connection failed. Please retry.', 'error');
+		});
+	});
+
+	// AJAX templates form submit
+	$('#pishtop-templates-form').on('submit', function(e) {
+		e.preventDefault();
+		var form = $(this);
+		var btn = form.find('.pishtop-save-btn');
+		btn.addClass('disabled').prop('disabled', true);
+		
+		var formData = form.serializeArray();
+		formData.push({ name: 'action', value: 'pishtop_save_templates' });
+		formData.push({ name: 'nonce', value: pishtopSettings.nonce });
+		
+		$.post(pishtopSettings.ajaxUrl, formData, function(response) {
+			btn.removeClass('disabled').prop('disabled', false);
+			if (response.success) {
+				showNotification(response.data, 'success');
+			} else {
+				showNotification(response.data || 'Failed to save templates.', 'error');
+			}
+		}).fail(function() {
+			btn.removeClass('disabled').prop('disabled', false);
+			showNotification('Connection failed. Please retry.', 'error');
+		});
+	});
+
 	// Template Repeater Actions
 	$('#pishtop-add-new-template').on('click', function(e) {
 		e.preventDefault();
 		var index = $('#pishtop-templates-repeater .template-item-card').length;
 		var templateHtml = $('#pishtop-template-repeater-row').html();
 		templateHtml = templateHtml.replace(/\{\{idx\}\}/g, index);
-		$('#pishtop-templates-repeater').append(templateHtml);
+		
+		var $newCard = $(templateHtml);
+		// New cards should start expanded
+		$newCard.removeClass('collapsed');
+		$newCard.find('.pishtop-btn-toggle-collapse').text('Collapse');
+		
+		$('#pishtop-templates-repeater').append($newCard);
 	});
 
 	$(document).on('click', '.pishtop-btn-remove-template', function(e) {
 		e.preventDefault();
+		e.stopPropagation();
 		if (confirm(pishtopSettings.confirm)) {
 			$(this).closest('.template-item-card').remove();
 		}
@@ -134,7 +285,7 @@ jQuery(document).ready(function($) {
 		var $tbody = $('#pishtop-logs-tbody');
 		var $prev = $('#pishtop-logs-prev');
 		var $next = $('#pishtop-logs-next');
-
+ 
 		$tbody.html('<tr><td colspan="4" style="text-align:center;"><span class="spinner is-active" style="float:none;"></span> Loading...</td></tr>');
 
 		$.get(pishtopSettings.ajaxUrl, {
@@ -153,10 +304,10 @@ jQuery(document).ready(function($) {
 				$prev.prop('disabled', currentLogPage <= 1);
 				$next.prop('disabled', currentLogPage >= response.data.totalPages);
 			} else {
-				$tbody.html('<tr><td colspan="4" style="text-align:center; color:red;">Failed to load logs.</td></tr>');
+				$tbody.html('<tr><td colspan="4" style="text-align:center; color:var(--danger);">Failed to load logs.</td></tr>');
 			}
 		}).fail(function() {
-			$tbody.html('<tr><td colspan="4" style="text-align:center; color:red;">Failed to load logs.</td></tr>');
+			$tbody.html('<tr><td colspan="4" style="text-align:center; color:var(--danger);">Failed to load logs.</td></tr>');
 		});
 	}
 
@@ -236,8 +387,10 @@ jQuery(document).ready(function($) {
 				if (response.data.done) {
 					isIndexing = false;
 					$btn.html('Done!');
-					alert(response.data.message);
-					location.reload();
+					showNotification(response.data.message, 'success');
+					setTimeout(function() {
+						location.reload();
+					}, 1000);
 				} else {
 					indexedCount++;
 					runNextIndexStep();
@@ -246,13 +399,13 @@ jQuery(document).ready(function($) {
 				isIndexing = false;
 				$btn.removeClass('disabled').prop('disabled', false).html('Start Bulk Indexing');
 				$btn.find('.btn-spinner').addClass('hidden');
-				alert('Indexing interrupted: ' + (response.data || 'Unknown error.'));
+				showNotification('Indexing interrupted: ' + (response.data || 'Unknown error.'), 'error');
 			}
 		}).fail(function() {
 			isIndexing = false;
 			$btn.removeClass('disabled').prop('disabled', false).html('Start Bulk Indexing');
 			$btn.find('.btn-spinner').addClass('hidden');
-			alert('Network error during indexing.');
+			showNotification('Network error during indexing.', 'error');
 		});
 	}
 });

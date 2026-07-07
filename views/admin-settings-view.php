@@ -27,14 +27,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span class="quota-separator">/</span>
 					<span class="quota-limit"><?php echo $settings['daily_embedding_quota'] > 0 ? esc_html( $settings['daily_embedding_quota'] ) : '∞'; ?></span>
 				</div>
-				<div class="quota-bar-wrapper">
-					<?php
-					$emb_percent = $settings['daily_embedding_quota'] > 0 ? ( $stats['embedding'] / $settings['daily_embedding_quota'] ) * 100 : 0;
-					$emb_percent = min( 100, max( 0, $emb_percent ) );
-					?>
-					<div class="quota-progress-bar" style="width: <?php echo esc_attr( $emb_percent ); ?>%;"></div>
-				</div>
 				<p class="stat-meta"><?php esc_html_e( 'Requests executed today', 'pishtop-content-suggestion-with-ai' ); ?></p>
+			</div>
+			<?php
+			$emb_percent = $settings['daily_embedding_quota'] > 0 ? ( $stats['embedding'] / $settings['daily_embedding_quota'] ) * 100 : 0;
+			$emb_percent = min( 100, max( 0, $emb_percent ) );
+			?>
+			<div class="circular-gauge-wrapper">
+				<svg viewBox="0 0 36 36" class="circular-chart indigo-chart">
+					<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<path class="circle" stroke-dasharray="<?php echo esc_attr( $emb_percent ); ?>, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<text x="18" y="20.35" class="percentage-label"><?php echo round( $emb_percent ); ?>%</text>
+				</svg>
 			</div>
 		</div>
 
@@ -49,14 +53,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span class="quota-separator">/</span>
 					<span class="quota-limit"><?php echo $settings['daily_ranking_quota'] > 0 ? esc_html( $settings['daily_ranking_quota'] ) : '∞'; ?></span>
 				</div>
-				<div class="quota-bar-wrapper">
-					<?php
-					$rank_percent = $settings['daily_ranking_quota'] > 0 ? ( $stats['ranking'] / $settings['daily_ranking_quota'] ) * 100 : 0;
-					$rank_percent = min( 100, max( 0, $rank_percent ) );
-					?>
-					<div class="quota-progress-bar purple-bar" style="width: <?php echo esc_attr( $rank_percent ); ?>%;"></div>
-				</div>
 				<p class="stat-meta"><?php esc_html_e( 'Recommendations ranked today', 'pishtop-content-suggestion-with-ai' ); ?></p>
+			</div>
+			<?php
+			$rank_percent = $settings['daily_ranking_quota'] > 0 ? ( $stats['ranking'] / $settings['daily_ranking_quota'] ) * 100 : 0;
+			$rank_percent = min( 100, max( 0, $rank_percent ) );
+			?>
+			<div class="circular-gauge-wrapper">
+				<svg viewBox="0 0 36 36" class="circular-chart purple-chart">
+					<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<path class="circle" stroke-dasharray="<?php echo esc_attr( $rank_percent ); ?>, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<text x="18" y="20.35" class="percentage-label"><?php echo round( $rank_percent ); ?>%</text>
+				</svg>
 			</div>
 		</div>
 
@@ -99,7 +107,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</nav>
 
 	<!-- Form Section -->
-	<form method="post" action="options.php" class="pishtop-form-container">
+	<form method="post" action="options.php" class="pishtop-form-container" id="pishtop-settings-form">
 		<?php settings_fields( 'pishtop_ai_settings_group' ); ?>
 
 		<!-- TAB: GENERAL -->
@@ -139,7 +147,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 				<div class="form-row action-row">
 					<label><?php esc_html_e( 'Maintenance Actions', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap button-group">
+					<div class="field-wrap pishtop-button-group">
 						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-rec-caches">
 							<span class="btn-spinner hidden"></span>
 							<?php esc_html_e( 'Clear Recommendation Caches', 'pishtop-content-suggestion-with-ai' ); ?>
@@ -271,7 +279,10 @@ Rules:
 				<div class="form-row">
 					<label for="pishtop_enable_logging"><?php esc_html_e( 'Enable Diagnostics Logging', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
-						<input type="checkbox" id="pishtop_enable_logging" name="pishtop_ai_settings[enable_logging]" value="1" <?php checked( $settings['enable_logging'], 1 ); ?> />
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" id="pishtop_enable_logging" name="pishtop_ai_settings[enable_logging]" value="1" <?php checked( $settings['enable_logging'], 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
 						<p class="description"><?php esc_html_e( 'Write request and error logs in database (capped at 5,000 rows).', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
@@ -296,7 +307,7 @@ Rules:
 
 	<!-- TAB: TEMPLATES -->
 	<div id="tab-templates" class="pishtop-tab-content">
-		<form method="post" action="" class="pishtop-form-container">
+		<form method="post" action="" class="pishtop-form-container" id="pishtop-templates-form">
 			<?php wp_nonce_field( 'pishtop_save_templates', 'pishtop_templates_nonce' ); ?>
 			<div class="pishtop-card">
 				<h2><?php esc_html_e( 'Layout & Repeater Templates', 'pishtop-content-suggestion-with-ai' ); ?></h2>
@@ -311,27 +322,46 @@ Rules:
 					$idx = 0;
 					foreach ( $templates as $id => $tpl ) :
 						?>
-						<div class="template-item-card" data-index="<?php echo esc_attr( $idx ); ?>">
-							<div class="template-header-row">
-								<div class="template-id-wrapper">
-									<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
-									<input type="text" name="templates[<?php echo esc_attr( $idx ); ?>][id]" value="<?php echo esc_attr( $tpl['id'] ); ?>" class="template-id-input" required />
+						<div class="template-item-card collapsed" data-index="<?php echo esc_attr( $idx ); ?>">
+							<div class="template-card-header-bar">
+								<div class="template-title-summary">
+									<span class="template-title-label"><?php esc_html_e( 'Template ID:', 'pishtop-content-suggestion-with-ai' ); ?></span>
+									<span class="template-title-value"><?php echo esc_html( $tpl['id'] ); ?></span>
 								</div>
-								<button type="button" class="pishtop-btn-remove-template"><?php esc_html_e( 'Delete Template', 'pishtop-content-suggestion-with-ai' ); ?></button>
+								<div class="template-header-actions">
+									<button type="button" class="pishtop-btn pishtop-btn-outline pishtop-btn-copy-shortcode" data-id="<?php echo esc_attr( $tpl['id'] ); ?>">
+										<?php esc_html_e( 'Copy Shortcode', 'pishtop-content-suggestion-with-ai' ); ?>
+									</button>
+									<button type="button" class="pishtop-btn pishtop-btn-outline pishtop-btn-toggle-collapse">
+										<?php esc_html_e( 'Expand', 'pishtop-content-suggestion-with-ai' ); ?>
+									</button>
+									<button type="button" class="pishtop-btn-remove-template">
+										<?php esc_html_e( 'Delete', 'pishtop-content-suggestion-with-ai' ); ?>
+									</button>
+								</div>
 							</div>
-							<div class="template-editors-grid">
-								<div>
-									<label><?php esc_html_e( 'Wrapper HTML (contains {{items}})', 'pishtop-content-suggestion-with-ai' ); ?></label>
-									<textarea name="templates[<?php echo esc_attr( $idx ); ?>][wrapper_html]" rows="4" class="code-editor"><?php echo esc_textarea( $tpl['wrapper_html'] ); ?></textarea>
+							
+							<div class="template-card-body">
+								<div class="template-header-row" style="margin-top: 15px;">
+									<div class="template-id-wrapper">
+										<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
+										<input type="text" name="templates[<?php echo esc_attr( $idx ); ?>][id]" value="<?php echo esc_attr( $tpl['id'] ); ?>" class="template-id-input" required />
+									</div>
 								</div>
-								<div>
-									<label><?php esc_html_e( 'Item HTML', 'pishtop-content-suggestion-with-ai' ); ?></label>
-									<textarea name="templates[<?php echo esc_attr( $idx ); ?>][item_html]" rows="4" class="code-editor"><?php echo esc_textarea( $tpl['item_html'] ); ?></textarea>
+								<div class="template-editors-grid">
+									<div>
+										<label><?php esc_html_e( 'Wrapper HTML (contains {{items}})', 'pishtop-content-suggestion-with-ai' ); ?></label>
+										<textarea name="templates[<?php echo esc_attr( $idx ); ?>][wrapper_html]" rows="4" class="code-editor"><?php echo esc_textarea( $tpl['wrapper_html'] ); ?></textarea>
+									</div>
+									<div>
+										<label><?php esc_html_e( 'Item HTML', 'pishtop-content-suggestion-with-ai' ); ?></label>
+										<textarea name="templates[<?php echo esc_attr( $idx ); ?>][item_html]" rows="4" class="code-editor"><?php echo esc_textarea( $tpl['item_html'] ); ?></textarea>
+									</div>
 								</div>
-							</div>
-							<div style="margin-top: 10px;">
-								<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
-								<textarea name="templates[<?php echo esc_attr( $idx ); ?>][custom_css]" rows="2" class="code-editor large-text"><?php echo esc_textarea( $tpl['custom_css'] ); ?></textarea>
+								<div style="margin-top: 10px;">
+									<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
+									<textarea name="templates[<?php echo esc_attr( $idx ); ?>][custom_css]" rows="2" class="code-editor large-text"><?php echo esc_textarea( $tpl['custom_css'] ); ?></textarea>
+								</div>
 							</div>
 						</div>
 						<?php
@@ -491,26 +521,45 @@ Rules:
 <!-- Template HTML for dynamic layout insertions in settings -->
 <script type="text/template" id="pishtop-template-repeater-row">
 	<div class="template-item-card" data-index="{{idx}}">
-		<div class="template-header-row">
-			<div class="template-id-wrapper">
-				<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
-				<input type="text" name="templates[{{idx}}][id]" value="" class="template-id-input" required />
+		<div class="template-card-header-bar">
+			<div class="template-title-summary">
+				<span class="template-title-label"><?php esc_html_e( 'Template ID:', 'pishtop-content-suggestion-with-ai' ); ?></span>
+				<span class="template-title-value"><?php esc_html_e( '(New Template)', 'pishtop-content-suggestion-with-ai' ); ?></span>
 			</div>
-			<button type="button" class="pishtop-btn-remove-template"><?php esc_html_e( 'Delete Template', 'pishtop-content-suggestion-with-ai' ); ?></button>
+			<div class="template-header-actions">
+				<button type="button" class="pishtop-btn pishtop-btn-outline pishtop-btn-copy-shortcode" data-id="">
+					<?php esc_html_e( 'Copy Shortcode', 'pishtop-content-suggestion-with-ai' ); ?>
+				</button>
+				<button type="button" class="pishtop-btn pishtop-btn-outline pishtop-btn-toggle-collapse">
+					<?php esc_html_e( 'Collapse', 'pishtop-content-suggestion-with-ai' ); ?>
+				</button>
+				<button type="button" class="pishtop-btn-remove-template">
+					<?php esc_html_e( 'Delete', 'pishtop-content-suggestion-with-ai' ); ?>
+				</button>
+			</div>
 		</div>
-		<div class="template-editors-grid">
-			<div>
-				<label><?php esc_html_e( 'Wrapper HTML (contains {{items}})', 'pishtop-content-suggestion-with-ai' ); ?></label>
-				<textarea name="templates[{{idx}}][wrapper_html]" rows="4" class="code-editor"><div class="related-wrapper">&#10;&#9;{{items}}&#10;</div></textarea>
+		
+		<div class="template-card-body">
+			<div class="template-header-row" style="margin-top: 15px;">
+				<div class="template-id-wrapper">
+					<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<input type="text" name="templates[{{idx}}][id]" value="" class="template-id-input" required />
+				</div>
 			</div>
-			<div>
-				<label><?php esc_html_e( 'Item HTML', 'pishtop-content-suggestion-with-ai' ); ?></label>
-				<textarea name="templates[{{idx}}][item_html]" rows="4" class="code-editor"><div class="related-item">&#10;&#9;<a href="{{permalink}}">{{title}}</a>&#10;</div></textarea>
+			<div class="template-editors-grid">
+				<div>
+					<label><?php esc_html_e( 'Wrapper HTML (contains {{items}})', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<textarea name="templates[{{idx}}][wrapper_html]" rows="4" class="code-editor"><div class="related-wrapper">&#10;&#9;{{items}}&#10;</div></textarea>
+				</div>
+				<div>
+					<label><?php esc_html_e( 'Item HTML', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<textarea name="templates[{{idx}}][item_html]" rows="4" class="code-editor"><div class="related-item">&#10;&#9;<a href="{{permalink}}">{{title}}</a>&#10;</div></textarea>
+				</div>
 			</div>
-		</div>
-		<div style="margin-top: 10px;">
-			<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
-			<textarea name="templates[{{idx}}][custom_css]" rows="2" class="code-editor large-text"></textarea>
+			<div style="margin-top: 10px;">
+				<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
+				<textarea name="templates[{{idx}}][custom_css]" rows="2" class="code-editor large-text"></textarea>
+			</div>
 		</div>
 	</div>
 </script>

@@ -31,6 +31,9 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Single-event background indexes queues
 * Asynchronous dynamic OpenRouter models loading with CSS skeleton effects
 * In-app Help & Documentation center covering features and configurations
+* High-fidelity, slate-light professional dashboard theme with custom toggles, circular SVG charts, and shadow lifts
+* Collapsible template repeater layouts with instant shortcode copy buttons
+* Asynchronous AJAX form saves with top-right floating toast notifications
 
 ## Verification Commands
 * standalone similarity and syntax check:
