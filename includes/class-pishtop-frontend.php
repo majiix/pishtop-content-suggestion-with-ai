@@ -81,12 +81,15 @@ class Frontend {
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 
+		$current_id = get_the_ID();
+		$current_type = $current_id ? get_post_type( $current_id ) : 'post';
+
 		$a = shortcode_atts( [
 			'post_id'   => 0,
 			'count'     => $default_count,
 			'limit'     => 0,
 			'template'  => 'default_list',
-			'post_type' => 'post',
+			'post_type' => $current_type ? $current_type : 'post',
 		], $atts );
 
 		$post_id = intval( $a['post_id'] );
@@ -173,9 +176,13 @@ class Frontend {
 		$title     = esc_html( get_the_title( $post ) );
 		$permalink = esc_url( get_permalink( $post ) );
 		
-		$image_url = get_the_post_thumbnail_url( $post, 'medium' );
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$thumb_size = ! empty( $settings['thumbnail_size'] ) ? sanitize_key( $settings['thumbnail_size'] ) : 'medium';
+		$fallback_img = ! empty( $settings['fallback_image_url'] ) ? esc_url_raw( $settings['fallback_image_url'] ) : PISHTOP_AI_URL . 'assets/placeholder.png';
+
+		$image_url = get_the_post_thumbnail_url( $post, $thumb_size );
 		if ( ! $image_url ) {
-			$image_url = PISHTOP_AI_URL . 'assets/placeholder.png';
+			$image_url = $fallback_img;
 		}
 		$image_url = esc_url( $image_url );
 

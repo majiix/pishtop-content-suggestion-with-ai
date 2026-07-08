@@ -10,9 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Database {
 
-	const MAX_LOG_ROWS = 5000;
-	const LOG_CLEANUP_THRESHOLD = 4500;
-
 	/**
 	 * Activate plugin and install database schema.
 	 */
@@ -195,20 +192,25 @@ class Database {
 	}
 
 	/**
-	 * Enforce maximum 5000 rows in log database table.
+	 * Enforce maximum rows in log database table.
 	 */
 	private static function cap_logs_table() {
 		global $wpdb;
 		$table = $wpdb->prefix . 'pishtop_logs';
 
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$max_rows = isset( $settings['max_log_rows'] ) ? max( 100, intval( $settings['max_log_rows'] ) ) : 5000;
+		$ratio = isset( $settings['log_cleanup_threshold_ratio'] ) ? max( 10, min( 100, intval( $settings['log_cleanup_threshold_ratio'] ) ) ) : 90;
+		$cleanup_threshold = intval( $max_rows * ( $ratio / 100 ) );
+
 		// Get total logs count
 		$count = $wpdb->get_var( "SELECT COUNT(*) FROM $table" );
-		if ( $count <= self::MAX_LOG_ROWS ) {
+		if ( $count <= $max_rows ) {
 			return;
 		}
 
 		// Find ID threshold to delete (delete down to threshold to prevent frequent deleting)
-		$delete_limit = $count - self::LOG_CLEANUP_THRESHOLD;
+		$delete_limit = $count - $cleanup_threshold;
 		$threshold_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table ORDER BY id ASC LIMIT %d, 1", $delete_limit ) );
 
 		if ( $threshold_id ) {

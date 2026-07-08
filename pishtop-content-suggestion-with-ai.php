@@ -18,7 +18,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'PISHTOP_AI_VERSION', '1.0.0' );
 define( 'PISHTOP_AI_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PISHTOP_AI_URL', plugin_dir_url( __FILE__ ) );
-define( 'PISHTOP_AI_LOCK_TTL', 60 );
 
 /**
  * Verifies that the current request has administrative privileges and a valid nonce.

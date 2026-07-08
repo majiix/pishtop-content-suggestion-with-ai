@@ -1146,3 +1146,32 @@ p.description {
 .toast-close:hover {
 	color: var(--text-primary);
 }
+
+/* Reset button styling */
+#pishtop-reset-prompt-btn {
+	background: transparent;
+	border: 1px solid var(--border-color);
+	color: var(--text-secondary);
+	padding: 5px 12px;
+	border-radius: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-left: 10px;
+	transition: all 0.2s ease;
+	vertical-align: middle;
+	display: inline-flex;
+	align-items: center;
+	height: auto;
+	line-height: 1.2;
+}
+
+#pishtop-reset-prompt-btn:hover {
+	background: rgba(0, 0, 0, 0.02);
+	border-color: var(--text-secondary);
+	color: var(--text-primary);
+}
+
+#pishtop-reset-prompt-btn:active {
+	transform: scale(0.97);
+}

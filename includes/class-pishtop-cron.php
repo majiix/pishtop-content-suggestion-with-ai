@@ -41,10 +41,20 @@ class Cron {
 	 * Setup scheduled tasks.
 	 */
 	public function schedule_cron_events() {
-		if ( ! wp_next_scheduled( 'pishtop_ai_daily_maintenance' ) ) {
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$schedule = ! empty( $settings['maintenance_schedule'] ) ? $settings['maintenance_schedule'] : 'daily';
+
+		$current_schedule = wp_get_schedule( 'pishtop_ai_daily_maintenance' );
+
+		if ( $current_schedule && $current_schedule !== $schedule ) {
+			wp_clear_scheduled_hook( 'pishtop_ai_daily_maintenance' );
+			$current_schedule = false;
+		}
+
+		if ( ! $current_schedule ) {
 			// Schedule daily maintenance task at next midnight
 			$local_midnight = strtotime( 'tomorrow' );
-			wp_schedule_event( $local_midnight, 'daily', 'pishtop_ai_daily_maintenance' );
+			wp_schedule_event( $local_midnight, $schedule, 'pishtop_ai_daily_maintenance' );
 		}
 	}
 
@@ -61,16 +71,20 @@ class Cron {
 			return;
 		}
 
-		if ( 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+
+		if ( ! in_array( $post->post_type, $allowed_types, true ) || 'publish' !== $post->post_status ) {
 			return;
 		}
 
 		// Clear cached recommendations for this post since content changed
 		Matching::clear_cache( $post_id );
 
-		// Schedule background worker event to generate embedding (delayed by 5 seconds)
+		// Schedule background worker event to generate embedding (delayed by settings value)
+		$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
 		if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
-			wp_schedule_single_event( time() + 5, 'pishtop_ai_index_post_event', [ $post_id ] );
+			wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
 		}
 	}
 

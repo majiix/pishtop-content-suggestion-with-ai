@@ -34,6 +34,10 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * High-fidelity, slate-light professional dashboard theme with custom toggles, circular SVG charts, and shadow lifts
 * Collapsible template repeater layouts with instant shortcode copy buttons
 * Asynchronous AJAX form saves with top-right floating toast notifications
+* Configurable post types selection for indexing and recommendations
+* Expose transient mutex lock TTL duration, database log row capacities, API request timeouts, LLM re-ranking temperatures, and log page sizes as editable admin settings
+* Expose HTTP header request title details, background queue indexing delays, log capacity cleanup ratios, maintenance cron schedules, fallback image URL paths, and post thumbnail sizes as custom admin settings
+* Dynamic prompt resetting feature allowing administrators to revert custom prompts to default JSON format instantly
 
 ## Verification Commands
 * standalone similarity and syntax check:

@@ -51,6 +51,7 @@ class Admin {
 			return;
 		}
 
+		wp_enqueue_media();
 		wp_enqueue_style( 'pishtop-admin-css', PISHTOP_AI_URL . 'assets/admin.css', [], PISHTOP_AI_VERSION );
 		wp_enqueue_script( 'pishtop-admin-js', PISHTOP_AI_URL . 'assets/admin.js', [ 'jquery' ], PISHTOP_AI_VERSION, true );
 
@@ -89,6 +90,18 @@ Rules:
 2. Select up to {{count}} post IDs that are most related to the current post.
 3. Output ONLY a raw JSON array of selected IDs, in order of relevance (highest first). Example: [104,82,91]
 4. Do not include any explanation, prefix, suffix, or markdown formatting in your response.",
+				'indexed_post_types'            => [ 'post' ],
+				'mutex_lock_ttl'                => 60,
+				'max_log_rows'                  => 5000,
+				'api_timeout'                   => 20,
+				'ranking_temperature'           => 0.1,
+				'log_page_size'                 => 20,
+				'api_request_title'             => 'PishTop Content Suggestion',
+				'cron_indexing_delay'           => 5,
+				'log_cleanup_threshold_ratio'   => 90,
+				'maintenance_schedule'          => 'daily',
+				'fallback_image_url'            => '',
+				'thumbnail_size'                => 'medium',
 			] );
 		}
 
@@ -120,6 +133,16 @@ Rules:
 			}
 		}
 
+		$sanitized['indexed_post_types'] = [];
+		if ( isset( $input['indexed_post_types'] ) && is_array( $input['indexed_post_types'] ) ) {
+			foreach ( $input['indexed_post_types'] as $pt ) {
+				$sanitized['indexed_post_types'][] = sanitize_key( $pt );
+			}
+		}
+		if ( empty( $sanitized['indexed_post_types'] ) ) {
+			$sanitized['indexed_post_types'] = [ 'post' ];
+		}
+
 		$sanitized['ranking_model'] = isset( $input['ranking_model'] ) ? sanitize_text_field( $input['ranking_model'] ) : 'google/gemini-2.5-flash';
 		$sanitized['similarity_candidate_count'] = isset( $input['similarity_candidate_count'] ) ? max( 5, intval( $input['similarity_candidate_count'] ) ) : 50;
 		$sanitized['max_pre_filtered_candidates'] = isset( $input['max_pre_filtered_candidates'] ) ? max( 10, intval( $input['max_pre_filtered_candidates'] ) ) : 500;
@@ -128,6 +151,18 @@ Rules:
 		$sanitized['daily_ranking_quota'] = isset( $input['daily_ranking_quota'] ) ? max( 0, intval( $input['daily_ranking_quota'] ) ) : 1000;
 		$sanitized['enable_logging'] = isset( $input['enable_logging'] ) ? 1 : 0;
 		$sanitized['log_retention'] = isset( $input['log_retention'] ) ? max( 1, intval( $input['log_retention'] ) ) : 7;
+		$sanitized['mutex_lock_ttl'] = isset( $input['mutex_lock_ttl'] ) ? max( 5, intval( $input['mutex_lock_ttl'] ) ) : 60;
+		$sanitized['max_log_rows'] = isset( $input['max_log_rows'] ) ? max( 100, intval( $input['max_log_rows'] ) ) : 5000;
+		$sanitized['api_timeout'] = isset( $input['api_timeout'] ) ? max( 5, min( 120, intval( $input['api_timeout'] ) ) ) : 20;
+		$sanitized['ranking_temperature'] = isset( $input['ranking_temperature'] ) ? max( 0.0, min( 2.0, floatval( $input['ranking_temperature'] ) ) ) : 0.1;
+		$sanitized['log_page_size'] = isset( $input['log_page_size'] ) ? max( 5, min( 100, intval( $input['log_page_size'] ) ) ) : 20;
+		
+		$sanitized['api_request_title'] = isset( $input['api_request_title'] ) ? sanitize_text_field( $input['api_request_title'] ) : 'PishTop Content Suggestion';
+		$sanitized['cron_indexing_delay'] = isset( $input['cron_indexing_delay'] ) ? max( 0, intval( $input['cron_indexing_delay'] ) ) : 5;
+		$sanitized['log_cleanup_threshold_ratio'] = isset( $input['log_cleanup_threshold_ratio'] ) ? max( 10, min( 100, intval( $input['log_cleanup_threshold_ratio'] ) ) ) : 90;
+		$sanitized['maintenance_schedule'] = isset( $input['maintenance_schedule'] ) ? sanitize_key( $input['maintenance_schedule'] ) : 'daily';
+		$sanitized['fallback_image_url'] = isset( $input['fallback_image_url'] ) ? esc_url_raw( $input['fallback_image_url'] ) : '';
+		$sanitized['thumbnail_size'] = isset( $input['thumbnail_size'] ) ? sanitize_key( $input['thumbnail_size'] ) : 'medium';
 		
 		// Prompt sanitization - preserve linebreaks but strip injection risk markup if needed. Support custom template structure.
 		$sanitized['prompt_template'] = isset( $input['prompt_template'] ) ? sanitize_textarea_field( $input['prompt_template'] ) : '';
@@ -148,8 +183,22 @@ Rules:
 		
 		// Total unindexed posts count
 		global $wpdb;
-		$total_posts = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type = 'post'" );
-		$indexed_posts = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT post_id) FROM {$wpdb->prefix}pishtop_post_embeddings" );
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
+
+		$total_posts_query = $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ($placeholders)",
+			$allowed_types
+		);
+		$total_posts = (int) $wpdb->get_var( $total_posts_query );
+
+		$indexed_posts_query = $wpdb->prepare(
+			"SELECT COUNT(DISTINCT emb.post_id) FROM {$wpdb->prefix}pishtop_post_embeddings emb
+			 JOIN {$wpdb->posts} p ON emb.post_id = p.ID
+			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders)",
+			$allowed_types
+		);
+		$indexed_posts = (int) $wpdb->get_var( $indexed_posts_query );
 		$unindexed_posts = max( 0, $total_posts - $indexed_posts );
 
 		// Load template markup
@@ -222,7 +271,8 @@ Rules:
 		$page   = isset( $_GET['log_page'] ) ? max( 1, intval( $_GET['log_page'] ) ) : 1;
 		$level  = isset( $_GET['log_level'] ) ? sanitize_text_field( $_GET['log_level'] ) : '';
 		$search = isset( $_GET['log_search'] ) ? sanitize_text_field( $_GET['log_search'] ) : '';
-		$limit  = 20;
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$limit  = isset( $settings['log_page_size'] ) ? max( 5, intval( $settings['log_page_size'] ) ) : 20;
 		$offset = ( $page - 1 ) * $limit;
 
 		$logs = Database::get_logs( $limit, $offset, $level, $search );
@@ -277,12 +327,18 @@ Rules:
 		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
 
 		// Find next unindexed post
-		$query = "SELECT p.ID FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
-			WHERE p.post_status = 'publish' AND p.post_type = 'post' AND emb.post_id IS NULL
-			ORDER BY p.ID DESC LIMIT 1";
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
 
-		$post_id = (int) $wpdb->get_var( $wpdb->prepare( $query, $emb_model ) );
+		$query = $wpdb->prepare(
+			"SELECT p.ID FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
+			WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL
+			ORDER BY p.ID DESC LIMIT 1",
+			array_merge( [ $emb_model ], $allowed_types )
+		);
+
+		$post_id = (int) $wpdb->get_var( $query );
 
 		if ( ! $post_id ) {
 			wp_send_json_success( [

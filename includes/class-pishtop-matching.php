@@ -60,8 +60,9 @@ class Matching {
 			return self::get_native_fallback( $post_id, $count );
 		}
 
-		// Acquire Mutex Lock (fixed TTL = 60s)
-		set_transient( $lock_key, true, PISHTOP_AI_LOCK_TTL );
+		// Acquire Mutex Lock (dynamic TTL from settings)
+		$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
+		set_transient( $lock_key, true, $lock_ttl );
 
 		// Run retrieval process
 		$ids = self::retrieve_and_rank( $post_id, $count );

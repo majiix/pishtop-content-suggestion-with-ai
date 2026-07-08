@@ -110,13 +110,17 @@ class API {
 
 		\pishtop_log( 'DEBUG', 'Requesting embedding from OpenRouter', [ 'model' => $model, 'text_length' => strlen( $text ) ] );
 
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
+		$api_title   = ! empty( $settings['api_request_title'] ) ? $settings['api_request_title'] : 'PishTop Content Suggestion';
+
 		$response = wp_remote_post( 'https://openrouter.ai/api/v1/embeddings', [
-			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', 15 ),
+			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', $api_timeout ),
 			'headers'   => [
 				'Authorization' => 'Bearer ' . $api_key,
 				'Content-Type'  => 'application/json',
 				'HTTP-Referer'  => esc_url( home_url() ),
-				'X-Title'       => 'PishTop Content Suggestion',
+				'X-Title'       => sanitize_text_field( $api_title ),
 			],
 			'body'      => json_encode( [
 				'model' => $model,
@@ -210,17 +214,21 @@ Rules:
 
 		\pishtop_log( 'DEBUG', 'Sending LLM ranking request to OpenRouter', [ 'model' => $model, 'candidates_count' => count( $candidates_data ) ] );
 
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
+		$api_title   = ! empty( $settings['api_request_title'] ) ? $settings['api_request_title'] : 'PishTop Content Suggestion';
+
 		$response = wp_remote_post( 'https://openrouter.ai/api/v1/chat/completions', [
-			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', 20 ),
+			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', $api_timeout ),
 			'headers'   => [
 				'Authorization' => 'Bearer ' . $api_key,
 				'Content-Type'  => 'application/json',
 				'HTTP-Referer'  => esc_url( home_url() ),
-				'X-Title'       => 'PishTop Content Suggestion',
+				'X-Title'       => sanitize_text_field( $api_title ),
 			],
 			'body'      => json_encode( [
 				'model'       => $model,
-				'temperature' => 0.1,
+				'temperature' => isset( $settings['ranking_temperature'] ) ? floatval( $settings['ranking_temperature'] ) : 0.1,
 				'messages'    => [
 					[ 'role' => 'system', 'content' => $system_prompt ],
 					[ 'role' => 'user', 'content' => $user_message ],
@@ -293,7 +301,11 @@ Rules:
 			return $cached;
 		}
 
-		$response = wp_remote_get( 'https://openrouter.ai/api/v1/models?output_modalities=embeddings', [ 'timeout' => 10 ] );
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
+		$fetch_timeout = max( 5, min( 15, intval( $api_timeout / 2 ) ) );
+
+		$response = wp_remote_get( 'https://openrouter.ai/api/v1/models?output_modalities=embeddings', [ 'timeout' => $fetch_timeout ] );
 		if ( is_wp_error( $response ) ) {
 			return self::get_fallback_embedding_models();
 		}
@@ -340,7 +352,11 @@ Rules:
 			return $cached;
 		}
 
-		$response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [ 'timeout' => 10 ] );
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
+		$fetch_timeout = max( 5, min( 15, intval( $api_timeout / 2 ) ) );
+
+		$response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [ 'timeout' => $fetch_timeout ] );
 		if ( is_wp_error( $response ) ) {
 			return self::get_fallback_ranking_models();
 		}
