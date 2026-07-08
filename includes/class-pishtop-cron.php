@@ -26,7 +26,9 @@ class Cron {
 
 		// Hook daily maintenance
 		add_action( 'pishtop_ai_daily_maintenance', [ $this, 'run_daily_maintenance' ] );
-		add_action( 'wp', [ $this, 'schedule_cron_events' ] );
+		add_action( 'init', [ $this, 'schedule_cron_events' ] );
+		add_action( 'updated_option', [ $this, 'schedule_cron_events_on_updated_option' ], 10, 3 );
+		add_action( 'added_option', [ $this, 'schedule_cron_events_on_added_option' ], 10, 2 );
 	}
 
 	/**
@@ -40,8 +42,10 @@ class Cron {
 	/**
 	 * Setup scheduled tasks.
 	 */
-	public function schedule_cron_events() {
-		$settings = get_option( 'pishtop_ai_settings', [] );
+	public function schedule_cron_events( $settings = null ) {
+		if ( null === $settings ) {
+			$settings = get_option( 'pishtop_ai_settings', [] );
+		}
 		$schedule = ! empty( $settings['maintenance_schedule'] ) ? $settings['maintenance_schedule'] : 'daily';
 
 		$current_schedule = wp_get_schedule( 'pishtop_ai_daily_maintenance' );
@@ -55,6 +59,24 @@ class Cron {
 			// Schedule daily maintenance task at next midnight
 			$local_midnight = strtotime( 'tomorrow' );
 			wp_schedule_event( $local_midnight, $schedule, 'pishtop_ai_daily_maintenance' );
+		}
+
+		// Periodic cron worker
+		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+		$enable_ranking = isset( $settings['enable_cron_ranking'] ) ? (bool) $settings['enable_cron_ranking'] : false;
+
+		if ( $enable_embedding || $enable_ranking ) {
+			$current_worker_schedule = wp_get_schedule( 'pishtop_ai_cron_worker_event' );
+			$saved_minutes = isset( $settings['cron_interval_minutes'] ) ? intval( $settings['cron_interval_minutes'] ) : 15;
+			$schedules = wp_get_schedules();
+			$scheduled_interval = $schedules['pishtop_custom_interval']['interval'] ?? 0;
+
+			if ( ! $current_worker_schedule || $scheduled_interval !== ( $saved_minutes * MINUTE_IN_SECONDS ) ) {
+				wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
+				wp_schedule_event( time() + 30, 'pishtop_custom_interval', 'pishtop_ai_cron_worker_event' );
+			}
+		} else {
+			wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
 		}
 	}
 
@@ -72,6 +94,11 @@ class Cron {
 		}
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
+		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+		if ( ! $enable_embedding ) {
+			return;
+		}
+
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 
 		if ( ! in_array( $post->post_type, $allowed_types, true ) || 'publish' !== $post->post_status ) {
@@ -93,6 +120,11 @@ class Cron {
 	 */
 	public function background_index_post( int $post_id ) {
 		$settings = get_option( 'pishtop_ai_settings', [] );
+		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+		if ( ! $enable_embedding ) {
+			return;
+		}
+
 		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
 
 		$text = Matching::build_post_text( $post_id );
@@ -138,5 +170,20 @@ class Cron {
 			'embedding' => 0,
 			'ranking'   => 0,
 		] );
+	}
+
+	/**
+	 * Options update hooks to process scheduling changes after database commits.
+	 */
+	public function schedule_cron_events_on_updated_option( $option, $old_value, $value ) {
+		if ( 'pishtop_ai_settings' === $option ) {
+			$this->schedule_cron_events( $value );
+		}
+	}
+
+	public function schedule_cron_events_on_added_option( $option, $value ) {
+		if ( 'pishtop_ai_settings' === $option ) {
+			$this->schedule_cron_events( $value );
+		}
 	}
 }

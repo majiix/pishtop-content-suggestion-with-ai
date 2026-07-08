@@ -100,6 +100,7 @@ class API {
 
 		$api_key = self::get_api_key();
 		if ( empty( $api_key ) ) {
+			\pishtop_log( 'WARNING', 'Embedding request aborted: OpenRouter API key is not configured.' );
 			return new \WP_Error( 'missing_key', 'OpenRouter API key is not configured.' );
 		}
 
@@ -112,7 +113,7 @@ class API {
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
-		$api_title   = ! empty( $settings['api_request_title'] ) ? $settings['api_request_title'] : 'PishTop Content Suggestion';
+		$api_title   = 'PishTop Content Suggestion';
 
 		$response = wp_remote_post( 'https://openrouter.ai/api/v1/embeddings', [
 			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', $api_timeout ),
@@ -161,6 +162,7 @@ class API {
 	public static function rerank_candidates( array $current_post_data, array $candidates_data, string $model, int $max_recommendations ) {
 		$api_key = self::get_api_key();
 		if ( empty( $api_key ) ) {
+			\pishtop_log( 'WARNING', 'Ranking request aborted: OpenRouter API key is not configured.' );
 			return new \WP_Error( 'missing_key', 'OpenRouter API key is not configured.' );
 		}
 
@@ -216,7 +218,7 @@ Rules:
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
-		$api_title   = ! empty( $settings['api_request_title'] ) ? $settings['api_request_title'] : 'PishTop Content Suggestion';
+		$api_title   = 'PishTop Content Suggestion';
 
 		$response = wp_remote_post( 'https://openrouter.ai/api/v1/chat/completions', [
 			'timeout'   => apply_filters( 'pishtop_ai_api_timeout', $api_timeout ),

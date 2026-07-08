@@ -1175,3 +1175,69 @@ p.description {
 #pishtop-reset-prompt-btn:active {
 	transform: scale(0.97);
 }
+
+/* Template Post Type Filter Selector Styling */
+.template-post-type-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.template-post-type-wrapper label {
+	font-weight: 700;
+	font-size: 11px;
+	color: var(--text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.template-post-type-wrapper select {
+	min-width: 220px;
+	padding: 10px 14px;
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	background-color: var(--bg-surface);
+	color: var(--text-primary);
+	font-size: 13px;
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 14px center;
+	background-size: 16px;
+	padding-right: 40px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+	transition: all 0.2s ease;
+}
+
+.template-post-type-wrapper select:focus {
+	outline: none;
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 4px var(--primary-color-alpha);
+}
+
+/* Custom Select Style Inside Input Unit Group */
+.input-unit-select {
+	border: none !important;
+	border-left: 1px solid var(--border-color) !important;
+	background: rgba(0, 0, 0, 0.03) !important;
+	padding: 10px 30px 10px 16px !important;
+	font-size: 12px;
+	color: var(--text-secondary);
+	font-weight: 600;
+	height: 100%;
+	cursor: pointer;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 10px center !important;
+	background-size: 12px !important;
+}
+
+.input-unit-select:focus {
+	outline: none !important;
+	box-shadow: none !important;
+}
+

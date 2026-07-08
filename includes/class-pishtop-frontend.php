@@ -81,15 +81,11 @@ class Frontend {
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 
-		$current_id = get_the_ID();
-		$current_type = $current_id ? get_post_type( $current_id ) : 'post';
-
 		$a = shortcode_atts( [
-			'post_id'   => 0,
-			'count'     => $default_count,
-			'limit'     => 0,
-			'template'  => 'default_list',
-			'post_type' => $current_type ? $current_type : 'post',
+			'post_id'  => 0,
+			'count'    => $default_count,
+			'limit'    => 0,
+			'template' => 'default_list',
 		], $atts );
 
 		$post_id = intval( $a['post_id'] );
@@ -104,7 +100,13 @@ class Frontend {
 		$limit = $a['limit'] > 0 ? intval( $a['limit'] ) : intval( $a['count'] );
 		$limit = max( 1, $limit );
 		$template = sanitize_key( $a['template'] );
-		$post_type = sanitize_key( $a['post_type'] );
+
+		// Retrieve post type filter configured inside the template
+		$templates = get_option( 'pishtop_ai_templates', [] );
+		$post_type = '';
+		if ( isset( $templates[ $template ]['post_type'] ) ) {
+			$post_type = sanitize_key( $templates[ $template ]['post_type'] );
+		}
 
 		ob_start();
 		?>
@@ -128,14 +130,15 @@ class Frontend {
 
 		$post_id     = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 		$limit       = isset( $_POST['limit'] ) ? max( 1, intval( $_POST['limit'] ) ) : 5;
-		$template_id = isset( $_POST['template'] ) ? sanitize_key( $_POST['template'] ) : 'default_list';
+		$template_id = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : 'default_list';
+		$post_type   = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 
 		if ( ! $post_id ) {
 			wp_send_json_error( 'Missing post ID' );
 		}
 
 		// Fetch recommendations
-		$rec_ids = Matching::get_recommendations( $post_id, $limit, $template_id );
+		$rec_ids = Matching::get_recommendations( $post_id, $limit, $template_id, $post_type );
 		if ( empty( $rec_ids ) ) {
 			wp_send_json_success( '' );
 		}

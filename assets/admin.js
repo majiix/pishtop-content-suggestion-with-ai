@@ -412,7 +412,7 @@ jQuery(document).ready(function($) {
 						location.reload();
 					}, 1000);
 				} else {
-					indexedCount++;
+					indexedCount += (response.data.processed ? parseInt(response.data.processed) : 1);
 					runNextIndexStep();
 				}
 			} else {

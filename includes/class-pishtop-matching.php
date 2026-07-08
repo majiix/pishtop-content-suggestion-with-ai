@@ -36,14 +36,13 @@ class Matching {
 		return $dot / ( sqrt( $norm1 ) * sqrt( $norm2 ) );
 	}
 
-	/**
-	 * Get recommendation post IDs for a given post.
-	 */
-	public static function get_recommendations( int $post_id, int $count, string $template_id ) {
+	public static function get_recommendations( int $post_id, int $count, string $template_id, string $post_type = '' ) {
 		$settings = get_option( 'pishtop_ai_settings', [] );
-		$cache_ttl = isset( $settings['cache_ttl'] ) ? intval( $settings['cache_ttl'] ) * 3600 : 12 * 3600; // default 12 hours in seconds
+		$cache_ttl_val = isset( $settings['cache_ttl'] ) ? intval( $settings['cache_ttl'] ) : 12;
+		$cache_ttl_unit = isset( $settings['cache_ttl_unit'] ) ? $settings['cache_ttl_unit'] : 'hours';
+		$cache_ttl = ( 'days' === $cache_ttl_unit ) ? $cache_ttl_val * DAY_IN_SECONDS : $cache_ttl_val * HOUR_IN_SECONDS;
 
-		$transient_key = "pishtop_rec_{$post_id}_{$template_id}";
+		$transient_key = "pishtop_rec_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
 		$cached_ids    = get_transient( $transient_key );
 
 		if ( false !== $cached_ids ) {
@@ -57,7 +56,7 @@ class Matching {
 		if ( $is_locked ) {
 			// Return native fallback immediately
 			\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
-			return self::get_native_fallback( $post_id, $count );
+			return self::get_native_fallback( $post_id, $count, $post_type );
 		}
 
 		// Acquire Mutex Lock (dynamic TTL from settings)
@@ -65,7 +64,7 @@ class Matching {
 		set_transient( $lock_key, true, $lock_ttl );
 
 		// Run retrieval process
-		$ids = self::retrieve_and_rank( $post_id, $count );
+		$ids = self::retrieve_and_rank( $post_id, $count, $post_type );
 
 		// Release Lock
 		delete_transient( $lock_key );
@@ -77,13 +76,13 @@ class Matching {
 		}
 
 		// Return native fallback if error occurred
-		return self::get_native_fallback( $post_id, $count );
+		return self::get_native_fallback( $post_id, $count, $post_type );
 	}
 
 	/**
 	 * Internal logic to retrieve, score, and re-rank candidate recommendations.
 	 */
-	private static function retrieve_and_rank( int $post_id, int $count ) {
+	private static function retrieve_and_rank( int $post_id, int $count, string $post_type = '' ) {
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$emb_model   = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
 		$rank_model  = ! empty( $settings['ranking_model'] ) ? $settings['ranking_model'] : 'google/gemini-2.5-flash';
@@ -117,7 +116,7 @@ class Matching {
 		}
 
 		// 2. Fetch candidates matching language, post type, and active model
-		$candidates = Database::get_candidates( $post_id, $lang, $emb_model, $sql_ceiling );
+		$candidates = Database::get_candidates( $post_id, $lang, $emb_model, $sql_ceiling, $post_type );
 		if ( empty( $candidates ) ) {
 			return [];
 		}
@@ -181,7 +180,41 @@ class Matching {
 			}
 		}
 
-		return array_slice( $ranked_ids, 0, $count );
+		$ranked_ids = array_slice( $ranked_ids, 0, $count );
+
+		$sort_option = $settings['final_output_sort'] ?? 'similarity';
+		if ( 'similarity' !== $sort_option && ! empty( $ranked_ids ) ) {
+			if ( 'random' === $sort_option ) {
+				shuffle( $ranked_ids );
+			} else {
+				$posts_to_sort = get_posts( [
+					'post__in'       => $ranked_ids,
+					'orderby'        => 'post__in',
+					'posts_per_page' => -1,
+					'post_type'      => 'any',
+				] );
+
+				if ( 'date_desc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcmp( $b->post_date, $a->post_date );
+					} );
+				} elseif ( 'date_asc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcmp( $a->post_date, $b->post_date );
+					} );
+				} elseif ( 'title_asc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcasecmp( $a->post_title, $b->post_title );
+					} );
+				}
+
+				$ranked_ids = array_map( function( $p ) {
+					return $p->ID;
+				}, $posts_to_sort );
+			}
+		}
+
+		return $ranked_ids;
 	}
 
 	/**
@@ -242,10 +275,7 @@ class Matching {
 		return wp_strip_all_tags( $concatenated );
 	}
 
-	/**
-	 * Fallback native recommendations logic.
-	 */
-	public static function get_native_fallback( int $post_id, int $count ) {
+	public static function get_native_fallback( int $post_id, int $count, string $post_type = '' ) {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return [];
@@ -258,8 +288,10 @@ class Matching {
 			return [];
 		}
 
+		$post_type = ! empty( $post_type ) ? sanitize_key( $post_type ) : $post->post_type;
+
 		$args = [
-			'post_type'      => $post->post_type,
+			'post_type'      => $post_type,
 			'posts_per_page' => $count,
 			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 			'post__not_in'   => [ $post_id ],
@@ -278,7 +310,7 @@ class Matching {
 		}
 
 		if ( 'category' === $fallback_behavior ) {
-			$taxonomies = get_object_taxonomies( $post->post_type );
+			$taxonomies = get_object_taxonomies( $post_type );
 			$tax_query = [];
 			foreach ( $taxonomies as $taxonomy ) {
 				$terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'ids' ] );
@@ -300,7 +332,41 @@ class Matching {
 		}
 
 		$query = new \WP_Query( $args );
-		return $query->posts;
+		$ids = $query->posts;
+
+		$sort_option = $settings['final_output_sort'] ?? 'similarity';
+		if ( 'similarity' !== $sort_option && ! empty( $ids ) ) {
+			if ( 'random' === $sort_option ) {
+				shuffle( $ids );
+			} else {
+				$posts_to_sort = get_posts( [
+					'post__in'       => $ids,
+					'orderby'        => 'post__in',
+					'posts_per_page' => -1,
+					'post_type'      => 'any',
+				] );
+
+				if ( 'date_desc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcmp( $b->post_date, $a->post_date );
+					} );
+				} elseif ( 'date_asc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcmp( $a->post_date, $b->post_date );
+					} );
+				} elseif ( 'title_asc' === $sort_option ) {
+					usort( $posts_to_sort, function( $a, $b ) {
+						return strcasecmp( $a->post_title, $b->post_title );
+					} );
+				}
+
+				$ids = array_map( function( $p ) {
+					return $p->ID;
+				}, $posts_to_sort );
+			}
+		}
+
+		return $ids;
 	}
 
 	/**

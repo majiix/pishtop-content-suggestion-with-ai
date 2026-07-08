@@ -122,9 +122,8 @@ class Database {
 
 	/**
 	 * Get candidate post IDs with existing embeddings for similarity search.
-	 */
-	public static function get_candidates( int $post_id, string $lang, string $model, int $limit = 500 ) {
-		$cache_key = 'pishtop_candidates_' . $post_id . '_' . md5( $lang . '_' . $model . '_' . $limit );
+	public static function get_candidates( int $post_id, string $lang, string $model, int $limit = 500, string $post_type = '' ) {
+		$cache_key = 'pishtop_candidates_' . $post_id . '_' . md5( $lang . '_' . $model . '_' . $limit . '_' . $post_type );
 		$cached = wp_cache_get( $cache_key, 'pishtop_embeddings' );
 		if ( false !== $cached ) {
 			return $cached;
@@ -139,7 +138,7 @@ class Database {
 			return [];
 		}
 
-		$post_type = $post->post_type;
+		$post_type = ! empty( $post_type ) ? sanitize_key( $post_type ) : $post->post_type;
 
 		// Fetch term taxonomies (categories, tags, etc) for pre-filtering similarity ranking
 		$terms = wp_get_post_terms( $post_id, get_object_taxonomies( $post_type ), [ 'fields' => 'ids' ] );

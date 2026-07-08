@@ -134,7 +134,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div class="field-wrap">
 						<div class="input-unit-group">
 							<input type="number" id="pishtop_cache_ttl" name="pishtop_ai_settings[cache_ttl]" value="<?php echo esc_attr( $settings['cache_ttl'] ); ?>" min="1" class="small-text" />
-							<span class="input-unit"><?php esc_html_e( 'Hours', 'pishtop-content-suggestion-with-ai' ); ?></span>
+							<select name="pishtop_ai_settings[cache_ttl_unit]" class="input-unit-select">
+								<option value="hours" <?php selected( $settings['cache_ttl_unit'] ?? 'hours', 'hours' ); ?>><?php esc_html_e( 'Hours', 'pishtop-content-suggestion-with-ai' ); ?></option>
+								<option value="days" <?php selected( $settings['cache_ttl_unit'] ?? 'hours', 'days' ); ?>><?php esc_html_e( 'Days', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							</select>
 						</div>
 						<p class="description"><?php esc_html_e( 'Duration recommendation matching results remain cached in transient database records.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
@@ -153,10 +156,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 
 				<div class="form-row">
-					<label for="pishtop_api_request_title"><?php esc_html_e( 'API Application Title', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<label for="pishtop_final_output_sort"><?php esc_html_e( 'Final Output Sorting', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
-						<input type="text" id="pishtop_api_request_title" name="pishtop_ai_settings[api_request_title]" value="<?php echo esc_attr( $settings['api_request_title'] ?? 'PishTop Content Suggestion' ); ?>" class="regular-text" />
-						<p class="description"><?php esc_html_e( 'Custom application name passed to OpenRouter in HTTP X-Title header. Useful for tracking usage in the OpenRouter dashboard.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+						<select id="pishtop_final_output_sort" name="pishtop_ai_settings[final_output_sort]">
+							<option value="similarity" <?php selected( $settings['final_output_sort'] ?? 'similarity', 'similarity' ); ?>><?php esc_html_e( 'AI Similarity Score (Default)', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="date_desc" <?php selected( $settings['final_output_sort'] ?? 'similarity', 'date_desc' ); ?>><?php esc_html_e( 'Publish Date (Newest First)', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="date_asc" <?php selected( $settings['final_output_sort'] ?? 'similarity', 'date_asc' ); ?>><?php esc_html_e( 'Publish Date (Oldest First)', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="title_asc" <?php selected( $settings['final_output_sort'] ?? 'similarity', 'title_asc' ); ?>><?php esc_html_e( 'Alphabetical (Title A-Z)', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="random" <?php selected( $settings['final_output_sort'] ?? 'similarity', 'random' ); ?>><?php esc_html_e( 'Random Order', 'pishtop-content-suggestion-with-ai' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'How the suggested related posts should be ordered in the final output display.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
@@ -396,7 +405,61 @@ Rules:
 						<p class="description"><?php esc_html_e( 'Maximum time to wait for OpenRouter API responses before failing or falling back.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
+			</div>
 
+			<div class="pishtop-card" style="margin-top: 20px;">
+				<h2><?php esc_html_e( 'WP-Cron Workers Settings', 'pishtop-content-suggestion-with-ai' ); ?></h2>
+				<div class="form-row">
+					<label><?php esc_html_e( 'Background Embedding Worker', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" name="pishtop_ai_settings[enable_cron_embedding]" value="1" <?php checked( $settings['enable_cron_embedding'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'Automatically generate post vector embeddings in the background using the periodic cron worker.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label><?php esc_html_e( 'Background Ranking Worker', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" name="pishtop_ai_settings[enable_cron_ranking]" value="1" <?php checked( $settings['enable_cron_ranking'] ?? 0 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'Pre-calculate and cache suggestions in the background to ensure fast page loads for visitors.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label for="pishtop_cron_interval_minutes"><?php esc_html_e( 'Cron Run Interval', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<div class="input-unit-group">
+							<input type="number" id="pishtop_cron_interval_minutes" name="pishtop_ai_settings[cron_interval_minutes]" value="<?php echo esc_attr( $settings['cron_interval_minutes'] ?? 15 ); ?>" min="1" class="small-text" />
+							<span class="input-unit"><?php esc_html_e( 'Minutes', 'pishtop-content-suggestion-with-ai' ); ?></span>
+						</div>
+						<p class="description"><?php esc_html_e( 'Time interval range between background worker runs.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label for="pishtop_cron_embedding_batch_size"><?php esc_html_e( 'Embedding Batch Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<input type="number" id="pishtop_cron_embedding_batch_size" name="pishtop_ai_settings[cron_embedding_batch_size]" value="<?php echo esc_attr( $settings['cron_embedding_batch_size'] ?? 5 ); ?>" min="1" class="small-text" />
+						<p class="description"><?php esc_html_e( 'Maximum number of posts to generate embeddings for in a single cron run interval.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label for="pishtop_cron_ranking_batch_size"><?php esc_html_e( 'Ranking Batch Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<input type="number" id="pishtop_cron_ranking_batch_size" name="pishtop_ai_settings[cron_ranking_batch_size]" value="<?php echo esc_attr( $settings['cron_ranking_batch_size'] ?? 5 ); ?>" min="1" class="small-text" />
+						<p class="description"><?php esc_html_e( 'Maximum number of posts to pre-calculate recommendations for in a single cron run interval.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+			</div>
+
+			<div class="pishtop-card" style="margin-top: 20px;">
 				<h2><?php esc_html_e( 'Logging & Diagnostics Controls', 'pishtop-content-suggestion-with-ai' ); ?></h2>
 				<div class="form-row">
 					<label for="pishtop_enable_logging"><?php esc_html_e( 'Enable Diagnostics Logging', 'pishtop-content-suggestion-with-ai' ); ?></label>
@@ -500,6 +563,20 @@ Rules:
 									<div class="template-id-wrapper">
 										<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
 										<input type="text" name="templates[<?php echo esc_attr( $pishtop_idx ); ?>][id]" value="<?php echo esc_attr( $pishtop_tpl['id'] ); ?>" class="template-id-input" required />
+									</div>
+									<div class="template-post-type-wrapper">
+										<label><?php esc_html_e( 'Target Post Type Filter', 'pishtop-content-suggestion-with-ai' ); ?></label>
+										<select name="templates[<?php echo esc_attr( $pishtop_idx ); ?>][post_type]" class="template-post-type-select">
+											<option value=""><?php esc_html_e( '- Current Post Type -', 'pishtop-content-suggestion-with-ai' ); ?></option>
+											<?php
+											$pishtop_types = get_post_types( [ 'public' => true ], 'objects' );
+											foreach ( $pishtop_types as $pishtop_pt ) {
+												$pishtop_selected = selected( $pishtop_tpl['post_type'] ?? '', $pishtop_pt->name, false );
+												// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+												echo '<option value="' . esc_attr( $pishtop_pt->name ) . '" ' . $pishtop_selected . '>' . esc_html( $pishtop_pt->label ) . '</option>';
+											}
+											?>
+										</select>
 									</div>
 								</div>
 								<div class="template-editors-grid">
@@ -698,6 +775,19 @@ Rules:
 				<div class="template-id-wrapper">
 					<label><?php esc_html_e( 'Template ID / Handle', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<input type="text" name="templates[{{idx}}][id]" value="" class="template-id-input" required />
+				</div>
+				<div class="template-post-type-wrapper">
+					<label><?php esc_html_e( 'Target Post Type Filter', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<select name="templates[{{idx}}][post_type]" class="template-post-type-select">
+						<option value=""><?php esc_html_e( '- Current Post Type -', 'pishtop-content-suggestion-with-ai' ); ?></option>
+						<?php
+						$pishtop_types = get_post_types( [ 'public' => true ], 'objects' );
+						foreach ( $pishtop_types as $pishtop_pt ) {
+							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+							echo '<option value="' . esc_attr( $pishtop_pt->name ) . '">' . esc_html( $pishtop_pt->label ) . '</option>';
+						}
+						?>
+					</select>
 				</div>
 			</div>
 			<div class="template-editors-grid">
