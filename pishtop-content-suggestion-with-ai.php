@@ -20,6 +20,44 @@ define( 'PISHTOP_AI_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PISHTOP_AI_URL', plugin_dir_url( __FILE__ ) );
 define( 'PISHTOP_AI_LOCK_TTL', 60 );
 
+/**
+ * Verifies that the current request has administrative privileges and a valid nonce.
+ *
+ * @param string $action Nonce action name.
+ * @param string $query_arg Request key for the nonce value.
+ * @return bool True if request is verified, false otherwise.
+ */
+function pishtop_verify_admin_action( string $action = 'pishtop_admin_action', string $query_arg = 'nonce' ): bool {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return false;
+	}
+	$nonce = isset( $_REQUEST[ $query_arg ] ) ? sanitize_text_field( wp_unslash( $_REQUEST[ $query_arg ] ) ) : '';
+	return (bool) wp_verify_nonce( $nonce, $action );
+}
+
+/**
+ * Core helper function for logging.
+ *
+ * @param string $level   Log level (INFO, WARNING, ERROR, DEBUG).
+ * @param string $message Log message.
+ * @param mixed  $context Log context metadata.
+ */
+function pishtop_log( string $level, string $message, $context = null ) {
+	\PishTop\AI\Database::add_log( $level, $message, $context );
+}
+
+/**
+ * Core helper function to request embedding for a given text.
+ *
+ * @param string $text Input text.
+ * @return array|\WP_Error Embedding vector array on success, WP_Error on failure.
+ */
+function pishtop_get_embedding( string $text ) {
+	$settings = get_option( 'pishtop_ai_settings', [] );
+	$model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
+	return \PishTop\AI\API::get_embedding( $text, $model );
+}
+
 // Simple Autoloader
 spl_autoload_register( function ( $class ) {
 	if ( strpos( $class, 'PishTop\\AI\\' ) !== 0 ) {

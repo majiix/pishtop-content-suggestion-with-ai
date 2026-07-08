@@ -56,7 +56,7 @@ class Matching {
 
 		if ( $is_locked ) {
 			// Return native fallback immediately
-			Database::add_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
+			\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
 			return self::get_native_fallback( $post_id, $count );
 		}
 

@@ -13,7 +13,7 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * None (Native WordPress HTTP APIs like `wp_remote_post()` are used for OpenRouter communication).
 
 ## Architecture
-* **Bootstrap**: [pishtop-content-suggestion.php](file:///e:/wps/dorsanet/app/public/wp-content/plugins/pishtop-content-suggestion-with-ai/pishtop-content-suggestion.php) (Main plugin entrypoint).
+* **Bootstrap**: [pishtop-content-suggestion-with-ai.php](file:///e:/wps/dorsanet/app/public/wp-content/plugins/pishtop-content-suggestion-with-ai/pishtop-content-suggestion-with-ai.php) (Main plugin entrypoint).
 * **Database Setup**: Custom tables `wp_pishtop_post_embeddings` (stores model, language, serialized vector binary array) and `wp_pishtop_logs` (diagnostic logs). Runs on plugin activation.
 * **Matching Engine**: 
   1. Pre-filter candidates by language (WPML/Polylang), post type, taxonomy, and recent date.

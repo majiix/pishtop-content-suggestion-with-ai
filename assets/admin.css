@@ -279,6 +279,11 @@
 	background: rgba(0, 0, 0, 0.03);
 }
 
+.tab-link:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--glow-indigo);
+}
+
 .tab-link.active {
 	color: #ffffff;
 	background: var(--primary);
@@ -414,7 +419,14 @@
 }
 
 .pishtop-switch-input {
-	display: none;
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.pishtop-switch-input:focus-visible + .pishtop-switch {
+	box-shadow: 0 0 0 3px var(--glow-indigo);
 }
 
 .pishtop-switch-input:checked + .pishtop-switch {
@@ -530,6 +542,11 @@ p.description {
 	transform: scale(0.97);
 }
 
+.pishtop-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--glow-indigo);
+}
+
 .pishtop-btn-outline {
 	background: transparent;
 	border-color: var(--border-color);
@@ -572,6 +589,15 @@ p.description {
 .pishtop-save-btn:hover {
 	transform: translateY(-2px);
 	box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3) !important;
+}
+
+.pishtop-save-btn:active {
+	transform: translateY(1px) scale(0.98);
+}
+
+.pishtop-save-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--glow-indigo), 0 4px 14px rgba(79, 70, 229, 0.25) !important;
 }
 
 .pishtop-form-footer {

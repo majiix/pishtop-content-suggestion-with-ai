@@ -361,7 +361,8 @@ jQuery(document).ready(function($) {
 		totalToIndex = parseInt($(this).data('count'));
 		if (totalToIndex <= 0) return;
 
-		if (!confirm('Bulk indexing will make OpenRouter API requests for all unindexed posts. Proceed?')) {
+		var costWarning = 'Warning: This will perform approximately ' + totalToIndex + ' API requests to generate embeddings. Depending on your OpenRouter model, this will consume API quota and may incur costs. Proceed?';
+		if (!confirm(costWarning)) {
 			return;
 		}
 
@@ -369,6 +370,8 @@ jQuery(document).ready(function($) {
 		indexedCount = 0;
 		$(this).addClass('disabled').prop('disabled', true);
 		$(this).find('.btn-spinner').removeClass('hidden');
+		$('#pishtop-bulk-index-progress-wrapper').removeClass('hidden');
+		$('#pishtop-bulk-index-progress-bar').css('width', '0%');
 		
 		runNextIndexStep();
 	});
@@ -378,15 +381,19 @@ jQuery(document).ready(function($) {
 
 		var $btn = $('#pishtop-start-bulk-index');
 		$btn.html('<span class="btn-spinner"></span> Indexing (' + indexedCount + '/' + totalToIndex + ')...');
+		
+		var pct = Math.min(100, Math.round((indexedCount / totalToIndex) * 100));
+		$('#pishtop-bulk-index-progress-bar').css('width', pct + '%');
 
 		$.post(pishtopSettings.ajaxUrl, {
-			action: 'pishtop_bulk_index',
+			action: 'pishtop_bulk_index_batch',
 			nonce: pishtopSettings.nonce
 		}, function(response) {
 			if (response.success) {
 				if (response.data.done) {
 					isIndexing = false;
 					$btn.html('Done!');
+					$('#pishtop-bulk-index-progress-bar').css('width', '100%');
 					showNotification(response.data.message, 'success');
 					setTimeout(function() {
 						location.reload();

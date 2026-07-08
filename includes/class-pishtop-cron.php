@@ -94,12 +94,12 @@ class Cron {
 
 		$vector = API::get_embedding( $text, $emb_model );
 		if ( is_wp_error( $vector ) ) {
-			Database::add_log( 'ERROR', "Background indexing failed for post $post_id: " . $vector->get_error_message() );
+			\pishtop_log( 'ERROR', "Background indexing failed for post $post_id: " . $vector->get_error_message() );
 			return;
 		}
 
 		Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
-		Database::add_log( 'INFO', "Background indexed post $post_id successfully." );
+		\pishtop_log( 'INFO', "Background indexed post $post_id successfully." );
 	}
 
 	/**
@@ -115,7 +115,7 @@ class Cron {
 		$threshold_date = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
 		
 		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold_date ) );
-		Database::add_log( 'INFO', sprintf( 'Daily maintenance: Deleted %d old log entries.', $deleted ) );
+		\pishtop_log( 'INFO', sprintf( 'Daily maintenance: Deleted %d old log entries.', $deleted ) );
 
 		// Reset daily usage counters
 		$today = wp_date( 'Y-m-d' );

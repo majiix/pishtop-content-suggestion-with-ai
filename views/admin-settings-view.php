@@ -85,6 +85,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<span class="btn-spinner hidden"></span>
 							<?php printf( esc_html__( 'Index Remaining (%d)', 'pishtop-content-suggestion-with-ai' ), $unindexed_posts ); ?>
 						</button>
+						<div id="pishtop-bulk-index-progress-wrapper" class="pishtop-progress-bar-wrapper hidden" style="margin-top:10px; width:100%; background:#e2e8f0; height:6px; border-radius:3px; overflow:hidden;">
+							<div id="pishtop-bulk-index-progress-bar" style="width:0%; height:100%; background:#3b82f6; transition: width 0.3s ease;"></div>
+						</div>
 					<?php else : ?>
 						<span class="index-complete-badge">
 							<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -101,6 +104,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<nav class="pishtop-tabs-nav">
 		<a href="#general" class="tab-link active"><?php esc_html_e( 'General Settings', 'pishtop-content-suggestion-with-ai' ); ?></a>
 		<a href="#engine" class="tab-link"><?php esc_html_e( 'Matching Engine', 'pishtop-content-suggestion-with-ai' ); ?></a>
+		<a href="#quota" class="tab-link"><?php esc_html_e( 'Quota & Security', 'pishtop-content-suggestion-with-ai' ); ?></a>
 		<a href="#templates" class="tab-link"><?php esc_html_e( 'Display Templates', 'pishtop-content-suggestion-with-ai' ); ?></a>
 		<a href="#diagnostics" class="tab-link" id="diagnostics-tab-trigger"><?php esc_html_e( 'Diagnostics & Logs', 'pishtop-content-suggestion-with-ai' ); ?></a>
 		<a href="#help" class="tab-link"><?php esc_html_e( 'Help & Documentation', 'pishtop-content-suggestion-with-ai' ); ?></a>
