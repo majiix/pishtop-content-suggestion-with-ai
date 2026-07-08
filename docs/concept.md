@@ -8,6 +8,8 @@ This blueprint outlines the technical architecture, security protocols, database
 
 The plugin resides fully within WordPress, using OpenRouter.ai to handle embeddings and LLM re-ranking. Vector storage is maintained locally in the database, with queries optimized by filtering candidates before similarity calculations.
 
+![PishTop Content Suggestion with AI Architecture Flowchart](pishtop_architecture_flowchart.jpg)
+
 ```mermaid
 graph TD
     %% Indexing Flow
