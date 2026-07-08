@@ -49,6 +49,12 @@ class Matching {
 			return is_array( $cached_ids ) ? $cached_ids : [];
 		}
 
+		// Staged execution check: bypass LLM ranking and use native fallback if unindexed posts exist
+		if ( self::has_unindexed_posts() ) {
+			\pishtop_log( 'INFO', "Indexing in progress. Returning native fallback for post {$post_id}." );
+			return self::get_native_fallback( $post_id, $count, $post_type );
+		}
+
 		// Mutex Cache Stampede Protection
 		$lock_key = "pishtop_lock_{$post_id}";
 		$is_locked = get_transient( $lock_key );
@@ -141,24 +147,37 @@ class Matching {
 		$top_ids = array_column( $top_similarity, 'id' );
 
 		// 4. Send top similarity matches to OpenRouter LLM for final re-ranking
-		// Prepare candidate data (Title and Excerpt) for prompt context
+		// Prepare candidate data based on selected ranking fields for prompt context
+		$rank_fields = $settings['ranking_fields'] ?? [ 'title', 'excerpt' ];
 		$candidates_data = [];
 		foreach ( $top_ids as $cand_id ) {
 			$cand_post = get_post( $cand_id );
 			if ( $cand_post ) {
-				$candidates_data[] = [
-					'id'      => $cand_id,
-					'title'   => get_the_title( $cand_post ),
-					'excerpt' => get_the_excerpt( $cand_post ),
-				];
+				$cand_item = [ 'id' => $cand_id ];
+				if ( in_array( 'title', $rank_fields, true ) ) {
+					$cand_item['title'] = get_the_title( $cand_post );
+				}
+				if ( in_array( 'excerpt', $rank_fields, true ) ) {
+					$cand_item['excerpt'] = get_the_excerpt( $cand_post );
+				}
+				if ( in_array( 'content', $rank_fields, true ) ) {
+					$cand_item['content'] = wp_strip_all_tags( $cand_post->post_content );
+				}
+				$candidates_data[] = $cand_item;
 			}
 		}
 
 		$current_post = get_post( $post_id );
-		$current_data = [
-			'title'   => get_the_title( $current_post ),
-			'excerpt' => get_the_excerpt( $current_post ),
-		];
+		$current_data = [];
+		if ( in_array( 'title', $rank_fields, true ) ) {
+			$current_data['title'] = get_the_title( $current_post );
+		}
+		if ( in_array( 'excerpt', $rank_fields, true ) ) {
+			$current_data['excerpt'] = get_the_excerpt( $current_post );
+		}
+		if ( in_array( 'content', $rank_fields, true ) ) {
+			$current_data['content'] = wp_strip_all_tags( $current_post->post_content );
+		}
 
 		// Call re-rank API
 		$ranked_ids = API::rerank_candidates( $current_data, $candidates_data, $rank_model, $count );
@@ -400,5 +419,32 @@ class Matching {
 		$wildcard = '_transient_pishtop_rec_' . $post_id . '_%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wildcard ) );
+	}
+
+	/**
+	 * Check if there are any unindexed posts in the database.
+	 */
+	public static function has_unindexed_posts() {
+		global $wpdb;
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
+		
+		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
+		
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$query = $wpdb->prepare(
+			"SELECT p.ID FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
+			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL
+			 LIMIT 1",
+			array_merge( [ $emb_model ], $allowed_types )
+		);
+		// phpcs:enable
+		
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$unindexed_exists = $wpdb->get_var( $query );
+		
+		return ! empty( $unindexed_exists );
 	}
 }

@@ -38,6 +38,10 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Expose transient mutex lock TTL duration, database log row capacities, API request timeouts, LLM re-ranking temperatures, and log page sizes as editable admin settings
 * Expose HTTP header request title details, background queue indexing delays, log capacity cleanup ratios, maintenance cron schedules, fallback image URL paths, and post thumbnail sizes as custom admin settings
 * Dynamic prompt resetting feature allowing administrators to revert custom prompts to default JSON format instantly
+* Periodic cron worker scheduling and background processing of vector embeddings and recommendations caching
+* Staged cron worker execution enforcing fallback matching until vector database indexing is fully complete
+* Inline fallback cron runner executing background tasks on page loads if scheduled cron executions are overdue
+* Configurable ranking source fields choosing Title, Excerpt, and/or Content as prompt context for LLM re-ranking
 
 ## Verification Commands
 * standalone similarity and syntax check:

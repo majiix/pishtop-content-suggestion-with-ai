@@ -79,18 +79,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span class="quota-separator">/</span>
 					<span class="quota-limit"><?php echo esc_html( $total_posts ); ?></span>
 				</div>
-				<div class="bulk-index-trigger-section">
+				<div style="margin-top: 10px;">
 					<?php if ( $unindexed_posts > 0 ) : ?>
-						<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-start-bulk-index" data-count="<?php echo esc_attr( $unindexed_posts ); ?>">
-							<span class="btn-spinner hidden"></span>
+						<span class="index-pending-badge" style="display:inline-flex; align-items:center; background:rgba(249,115,22,0.1); color:rgb(249,115,22); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600;">
 							<?php
 							/* translators: %d: number of unindexed posts */
-							echo esc_html( sprintf( __( 'Index Remaining (%d)', 'pishtop-content-suggestion-with-ai' ), $unindexed_posts ) );
+							echo esc_html( sprintf( __( '%d Pending', 'pishtop-content-suggestion-with-ai' ), $unindexed_posts ) );
 							?>
-						</button>
-						<div id="pishtop-bulk-index-progress-wrapper" class="pishtop-progress-bar-wrapper hidden" style="margin-top:10px; width:100%; background:#e2e8f0; height:6px; border-radius:3px; overflow:hidden;">
-							<div id="pishtop-bulk-index-progress-bar" style="width:0%; height:100%; background:#3b82f6; transition: width 0.3s ease;"></div>
-						</div>
+						</span>
 					<?php else : ?>
 						<span class="index-complete-badge">
 							<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -227,9 +223,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="form-row">
 					<label for="pishtop_embedding_model"><?php esc_html_e( 'Embedding Model', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
-						<select id="pishtop_embedding_model" name="pishtop_ai_settings[embedding_model]" class="pishtop-model-select loading">
+						<select id="pishtop_embedding_model" name="pishtop_ai_settings[embedding_model]" class="pishtop-model-select loading" data-initial="<?php echo esc_attr( $settings['embedding_model'] ); ?>">
 							<option value="<?php echo esc_attr( $settings['embedding_model'] ); ?>"><?php echo esc_html( $settings['embedding_model'] ); ?></option>
 						</select>
+						<div id="pishtop-embedding-model-warning" class="pishtop-warning-box hidden" style="margin-top: 10px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; color: #b45309; max-width: 600px;">
+							<strong style="display: block; font-size: 14px; margin-bottom: 4px;"><?php esc_html_e( 'Warning: Changing the Embedding Model', 'pishtop-content-suggestion-with-ai' ); ?></strong>
+							<p style="margin: 0; font-size: 13px; line-height: 1.4;">
+								<?php esc_html_e( 'Changing the embedding model requires recalculating vectors for all posts. Recommendations will fall back to default native sorting until the background embedding worker finishes indexing the entire database.', 'pishtop-content-suggestion-with-ai' ); ?>
+							</p>
+						</div>
 						<p class="description"><?php esc_html_e( 'Changes in embedding model discard old local vectors, triggering database-wide auto-regeneration.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
@@ -253,6 +255,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 						}
 						?>
 						<p class="description"><?php esc_html_e( 'Concatenated fields used to construct the text representation before embedding generation.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label><?php esc_html_e( 'Ranking Source Fields', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap checkbox-group">
+						<?php
+						$pishtop_rank_fields = $settings['ranking_fields'] ?? [ 'title', 'excerpt' ];
+						$pishtop_rank_options = [
+							'title'   => __( 'Post Title', 'pishtop-content-suggestion-with-ai' ),
+							'excerpt' => __( 'Post Excerpt', 'pishtop-content-suggestion-with-ai' ),
+							'content' => __( 'Full Content', 'pishtop-content-suggestion-with-ai' ),
+						];
+						foreach ( $pishtop_rank_options as $pishtop_val => $pishtop_label ) {
+							$pishtop_checked = in_array( $pishtop_val, $pishtop_rank_fields, true ) ? 'checked' : '';
+							echo '<label class="checkbox-label"><input type="checkbox" name="pishtop_ai_settings[ranking_fields][]" value="' . esc_attr( $pishtop_val ) . '" ' . esc_attr( $pishtop_checked ) . '> ' . esc_html( $pishtop_label ) . '</label>';
+						}
+						?>
+						<p class="description"><?php esc_html_e( 'Fields sent as context to the OpenRouter re-ranking LLM for candidate selection.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
@@ -457,8 +478,72 @@ Rules:
 						<p class="description"><?php esc_html_e( 'Maximum number of posts to pre-calculate recommendations for in a single cron run interval.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
+
 			</div>
 
+			<div class="pishtop-form-footer">
+				<?php submit_button( __( 'Save Settings', 'pishtop-content-suggestion-with-ai' ), 'primary pishtop-save-btn' ); ?>
+			</div>
+		</div>
+
+		<!-- TAB: DIAGNOSTICS & LOGS -->
+		<div id="tab-diagnostics" class="pishtop-tab-content">
+			<div class="pishtop-card">
+				<div class="logs-header-actions">
+					<h2><?php esc_html_e( 'Diagnostics Log Console', 'pishtop-content-suggestion-with-ai' ); ?></h2>
+					<div class="diagnostics-buttons-row">
+						<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-refresh-logs">
+							<span class="btn-spinner hidden"></span>
+							<?php esc_html_e( 'Refresh Logs', 'pishtop-content-suggestion-with-ai' ); ?>
+						</button>
+						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-logs-btn">
+							<span class="btn-spinner hidden"></span>
+							<?php esc_html_e( 'Clear All Logs', 'pishtop-content-suggestion-with-ai' ); ?>
+						</button>
+					</div>
+				</div>
+
+				<div class="logs-filter-toolbar">
+					<div class="filter-item">
+						<label for="pishtop-log-level-filter"><?php esc_html_e( 'Log Level', 'pishtop-content-suggestion-with-ai' ); ?></label>
+						<select id="pishtop-log-level-filter">
+							<option value=""><?php esc_html_e( 'All Levels', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="INFO"><?php esc_html_e( 'INFO', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="DEBUG"><?php esc_html_e( 'DEBUG', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="WARNING"><?php esc_html_e( 'WARNING', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="ERROR"><?php esc_html_e( 'ERROR', 'pishtop-content-suggestion-with-ai' ); ?></option>
+						</select>
+					</div>
+					<div class="filter-item search-item">
+						<label for="pishtop-log-search"><?php esc_html_e( 'Search keyword', 'pishtop-content-suggestion-with-ai' ); ?></label>
+						<input type="search" id="pishtop-log-search" placeholder="<?php esc_attr_e( 'Search message...', 'pishtop-content-suggestion-with-ai' ); ?>" />
+					</div>
+				</div>
+
+				<table class="wp-list-table widefat fixed striped pishtop-logs-table">
+					<thead>
+						<tr>
+							<th style="width: 180px;"><?php esc_html_e( 'Time (UTC)', 'pishtop-content-suggestion-with-ai' ); ?></th>
+							<th style="width: 100px;"><?php esc_html_e( 'Level', 'pishtop-content-suggestion-with-ai' ); ?></th>
+							<th><?php esc_html_e( 'Message', 'pishtop-content-suggestion-with-ai' ); ?></th>
+							<th style="width: 120px;"><?php esc_html_e( 'Context Data', 'pishtop-content-suggestion-with-ai' ); ?></th>
+						</tr>
+					</thead>
+					<tbody id="pishtop-logs-tbody">
+						<!-- Populated by JS -->
+					</tbody>
+				</table>
+
+				<div class="logs-pagination-toolbar">
+					<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-logs-prev" disabled><?php esc_html_e( '« Previous', 'pishtop-content-suggestion-with-ai' ); ?></button>
+					<span class="pagination-page-indicator">
+						<?php esc_html_e( 'Page', 'pishtop-content-suggestion-with-ai' ); ?> <span id="pishtop-current-log-page">1</span> <?php esc_html_e( 'of', 'pishtop-content-suggestion-with-ai' ); ?> <span id="pishtop-total-log-pages">1</span>
+					</span>
+					<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-logs-next" disabled><?php esc_html_e( 'Next »', 'pishtop-content-suggestion-with-ai' ); ?></button>
+				</div>
+			</div>
+
+			<!-- Logging & Diagnostics Controls Card -->
 			<div class="pishtop-card" style="margin-top: 20px;">
 				<h2><?php esc_html_e( 'Logging & Diagnostics Controls', 'pishtop-content-suggestion-with-ai' ); ?></h2>
 				<div class="form-row">
@@ -514,7 +599,21 @@ Rules:
 						<p class="description"><?php esc_html_e( 'Number of log rows to display per page in the Diagnostics tab.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
+
+				<div class="form-row danger-zone" style="border-top: 1px solid rgba(220,38,38,0.2); padding-top: 20px; margin-top: 20px;">
+					<label style="color: #dc2626; font-weight: 600;"><?php esc_html_e( 'Danger Zone: Delete Data on Uninstall', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" id="pishtop_delete_data_on_uninstall" name="pishtop_ai_settings[delete_data_on_uninstall]" value="1" <?php checked( $settings['delete_data_on_uninstall'] ?? 0, 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch danger-switch"></span>
+						</label>
+						<p class="description" style="color: #991b1b; font-weight: 500;">
+							<?php esc_html_e( 'WARNING: If enabled, all custom database tables, vector embeddings, activity logs, and settings configuration will be permanently deleted when this plugin is deleted/uninstalled.', 'pishtop-content-suggestion-with-ai' ); ?>
+						</p>
+					</div>
+				</div>
 			</div>
+
 			<div class="pishtop-form-footer">
 				<?php submit_button( __( 'Save Settings', 'pishtop-content-suggestion-with-ai' ), 'primary pishtop-save-btn' ); ?>
 			</div>
@@ -614,63 +713,7 @@ Rules:
 		</form>
 	</div>
 
-	<!-- TAB: DIAGNOSTICS & LOGS -->
-	<div id="tab-diagnostics" class="pishtop-tab-content">
-		<div class="pishtop-card">
-			<div class="logs-header-actions">
-				<h2><?php esc_html_e( 'Diagnostics Log Console', 'pishtop-content-suggestion-with-ai' ); ?></h2>
-				<div class="diagnostics-buttons-row">
-					<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-refresh-logs">
-						<span class="btn-spinner hidden"></span>
-						<?php esc_html_e( 'Refresh Logs', 'pishtop-content-suggestion-with-ai' ); ?>
-					</button>
-					<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-logs-btn">
-						<span class="btn-spinner hidden"></span>
-						<?php esc_html_e( 'Clear All Logs', 'pishtop-content-suggestion-with-ai' ); ?>
-					</button>
-				</div>
-			</div>
 
-			<div class="logs-filter-toolbar">
-				<div class="filter-item">
-					<label for="pishtop-log-level-filter"><?php esc_html_e( 'Log Level', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<select id="pishtop-log-level-filter">
-						<option value=""><?php esc_html_e( 'All Levels', 'pishtop-content-suggestion-with-ai' ); ?></option>
-						<option value="INFO"><?php esc_html_e( 'INFO', 'pishtop-content-suggestion-with-ai' ); ?></option>
-						<option value="DEBUG"><?php esc_html_e( 'DEBUG', 'pishtop-content-suggestion-with-ai' ); ?></option>
-						<option value="WARNING"><?php esc_html_e( 'WARNING', 'pishtop-content-suggestion-with-ai' ); ?></option>
-						<option value="ERROR"><?php esc_html_e( 'ERROR', 'pishtop-content-suggestion-with-ai' ); ?></option>
-					</select>
-				</div>
-				<div class="filter-item search-item">
-					<label for="pishtop-log-search"><?php esc_html_e( 'Search keyword', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<input type="search" id="pishtop-log-search" placeholder="<?php esc_attr_e( 'Search message...', 'pishtop-content-suggestion-with-ai' ); ?>" />
-				</div>
-			</div>
-
-			<table class="wp-list-table widefat fixed striped pishtop-logs-table">
-				<thead>
-					<tr>
-						<th style="width: 180px;"><?php esc_html_e( 'Time (UTC)', 'pishtop-content-suggestion-with-ai' ); ?></th>
-						<th style="width: 100px;"><?php esc_html_e( 'Level', 'pishtop-content-suggestion-with-ai' ); ?></th>
-						<th><?php esc_html_e( 'Message', 'pishtop-content-suggestion-with-ai' ); ?></th>
-						<th style="width: 120px;"><?php esc_html_e( 'Context Data', 'pishtop-content-suggestion-with-ai' ); ?></th>
-					</tr>
-				</thead>
-				<tbody id="pishtop-logs-tbody">
-					<!-- Populated by JS -->
-				</tbody>
-			</table>
-
-			<div class="logs-pagination-toolbar">
-				<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-logs-prev" disabled><?php esc_html_e( '« Previous', 'pishtop-content-suggestion-with-ai' ); ?></button>
-				<span class="pagination-page-indicator">
-					<?php esc_html_e( 'Page', 'pishtop-content-suggestion-with-ai' ); ?> <span id="pishtop-current-log-page">1</span> <?php esc_html_e( 'of', 'pishtop-content-suggestion-with-ai' ); ?> <span id="pishtop-total-log-pages">1</span>
-				</span>
-				<button type="button" class="pishtop-btn pishtop-btn-outline" id="pishtop-logs-next" disabled><?php esc_html_e( 'Next »', 'pishtop-content-suggestion-with-ai' ); ?></button>
-			</div>
-		</div>
-	</div>
 
 	<!-- TAB: HELP & DOCUMENTATION -->
 	<div id="tab-help" class="pishtop-tab-content">

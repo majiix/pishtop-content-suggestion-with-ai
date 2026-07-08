@@ -29,6 +29,11 @@ class Cron {
 		add_action( 'init', [ $this, 'schedule_cron_events' ] );
 		add_action( 'updated_option', [ $this, 'schedule_cron_events_on_updated_option' ], 10, 3 );
 		add_action( 'added_option', [ $this, 'schedule_cron_events_on_added_option' ], 10, 2 );
+
+		// Hook custom cron intervals and periodic worker event handler
+		add_filter( 'cron_schedules', [ $this, 'register_cron_intervals' ] );
+		add_action( 'pishtop_ai_cron_worker_event', [ $this, 'run_cron_worker' ] );
+		add_action( 'init', [ $this, 'check_inline_fallback_runner' ], 15 );
 	}
 
 	/**
@@ -37,6 +42,7 @@ class Cron {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( 'pishtop_ai_daily_maintenance' );
 		wp_clear_scheduled_hook( 'pishtop_ai_regeneration_queue' );
+		wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
 	}
 
 	/**
@@ -184,6 +190,173 @@ class Cron {
 	public function schedule_cron_events_on_added_option( $option, $value ) {
 		if ( 'pishtop_ai_settings' === $option ) {
 			$this->schedule_cron_events( $value );
+		}
+	}
+
+	/**
+	 * Register custom cron intervals.
+	 */
+	public function register_cron_intervals( $schedules ) {
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$minutes = isset( $settings['cron_interval_minutes'] ) ? intval( $settings['cron_interval_minutes'] ) : 15;
+		$schedules['pishtop_custom_interval'] = [
+			'interval' => $minutes * MINUTE_IN_SECONDS,
+			/* translators: %d: number of minutes */
+			'display'  => sprintf( __( 'Every %d Minutes', 'pishtop-content-suggestion-with-ai' ), $minutes ),
+		];
+		return $schedules;
+	}
+
+	/**
+	 * Periodic cron worker execution callback.
+	 */
+	public function run_cron_worker() {
+		update_option( 'pishtop_ai_cron_last_run', time() );
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+		$enable_ranking = isset( $settings['enable_cron_ranking'] ) ? (bool) $settings['enable_cron_ranking'] : false;
+
+		if ( $enable_embedding ) {
+			$this->run_embedding_worker( $settings );
+		}
+
+		if ( $enable_ranking ) {
+			$this->run_ranking_worker( $settings );
+		}
+	}
+
+	/**
+	 * Run background embedding worker.
+	 */
+	private function run_embedding_worker( $settings ) {
+		global $wpdb;
+		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
+
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
+
+		$batch_size = isset( $settings['cron_embedding_batch_size'] ) ? max( 1, intval( $settings['cron_embedding_batch_size'] ) ) : 5;
+		if ( ! wp_doing_cron() ) {
+			$batch_size = 1;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$query = $wpdb->prepare(
+			"SELECT p.ID FROM {$wpdb->posts} p
+			 LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
+			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL
+			 ORDER BY p.ID DESC LIMIT %d",
+			array_merge( [ $emb_model ], $allowed_types, [ $batch_size ] )
+		);
+		// phpcs:enable
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$post_ids = $wpdb->get_col( $query );
+
+		if ( empty( $post_ids ) ) {
+			return;
+		}
+
+		foreach ( $post_ids as $post_id ) {
+			$text = Matching::build_post_text( $post_id );
+			if ( empty( $text ) ) {
+				Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, array_fill( 0, 1536, 0.0 ) );
+				continue;
+			}
+
+			$vector = API::get_embedding( $text, $emb_model );
+			if ( is_wp_error( $vector ) ) {
+				\pishtop_log( 'ERROR', "Background cron indexing failed for post $post_id: " . $vector->get_error_message() );
+				continue;
+			}
+
+			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
+		}
+
+		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
+	}
+
+	/**
+	 * Run background ranking worker.
+	 */
+	private function run_ranking_worker( $settings ) {
+		if ( Matching::has_unindexed_posts() ) {
+			\pishtop_log( 'INFO', 'Background ranking worker skipped: Database has unindexed posts.' );
+			return;
+		}
+
+		global $wpdb;
+		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
+
+		$ranking_batch_size = isset( $settings['cron_ranking_batch_size'] ) ? max( 1, intval( $settings['cron_ranking_batch_size'] ) ) : 5;
+		if ( ! wp_doing_cron() ) {
+			$ranking_batch_size = 1;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$query = $wpdb->prepare(
+			"SELECT DISTINCT emb.post_id FROM {$wpdb->prefix}pishtop_post_embeddings emb
+			 JOIN {$wpdb->posts} p ON emb.post_id = p.ID
+			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.embedding_model = %s
+			 ORDER BY p.ID DESC",
+			array_merge( $allowed_types, [ $emb_model ] )
+		);
+		// phpcs:enable
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$post_ids = $wpdb->get_col( $query );
+
+		$templates = get_option( 'pishtop_ai_templates', [] );
+		$limit = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
+		$ranking_count = 0;
+
+		if ( ! empty( $templates ) && ! empty( $post_ids ) ) {
+			foreach ( $templates as $tpl_id => $tpl ) {
+				$tpl_post_type = $tpl['post_type'] ?? '';
+				foreach ( $post_ids as $post_id ) {
+					$transient_key = "pishtop_rec_{$post_id}_{$tpl_id}_" . sanitize_key( $tpl_post_type );
+					if ( false === get_transient( $transient_key ) ) {
+						if ( $ranking_count >= $ranking_batch_size ) {
+							break 2;
+						}
+						Matching::get_recommendations( $post_id, $limit, $tpl_id, $tpl_post_type );
+						$ranking_count++;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Check if the scheduled cron worker is overdue, and run a small batch inline if so.
+	 */
+	public function check_inline_fallback_runner() {
+		// Avoid running on AJAX, cron, or WP-CLI requests
+		if ( wp_doing_ajax() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			return;
+		}
+
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+		$enable_ranking = isset( $settings['enable_cron_ranking'] ) ? (bool) $settings['enable_cron_ranking'] : false;
+
+		if ( ! $enable_embedding && ! $enable_ranking ) {
+			return;
+		}
+
+		// Retrieve last run timestamp
+		$last_run = get_option( 'pishtop_ai_cron_last_run', 0 );
+		$interval_minutes = isset( $settings['cron_interval_minutes'] ) ? intval( $settings['cron_interval_minutes'] ) : 15;
+		$threshold = $interval_minutes * MINUTE_IN_SECONDS * 2; // Overdue if missed 2 intervals
+
+		if ( ( time() - $last_run ) > $threshold ) {
+			// Update last run time first to prevent concurrent requests from executing it simultaneously
+			update_option( 'pishtop_ai_cron_last_run', time() );
+
+			// Run worker inline
+			$this->run_cron_worker();
 		}
 	}
 }

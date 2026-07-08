@@ -29,8 +29,6 @@ class Admin {
 		add_action( 'wp_ajax_pishtop_clear_embeddings', [ $this, 'ajax_clear_embeddings' ] );
 		add_action( 'wp_ajax_pishtop_clear_logs', [ $this, 'ajax_clear_logs' ] );
 		add_action( 'wp_ajax_pishtop_get_logs', [ $this, 'ajax_get_logs' ] );
-		add_action( 'wp_ajax_pishtop_bulk_index', [ $this, 'ajax_bulk_index' ] );
-		add_action( 'wp_ajax_pishtop_bulk_index_batch', [ $this, 'ajax_bulk_index' ] );
 		add_action( 'wp_ajax_pishtop_load_models', [ $this, 'ajax_load_models' ] );
 		add_action( 'wp_ajax_pishtop_save_settings', [ $this, 'ajax_save_settings' ] );
 		add_action( 'wp_ajax_pishtop_save_templates', [ $this, 'ajax_save_templates' ] );
@@ -77,6 +75,7 @@ class Admin {
 				'default_fallback'              => 'category',
 				'embedding_model'               => 'openai/text-embedding-3-small',
 				'embedding_fields'              => [ 'title', 'excerpt' ],
+				'ranking_fields'                => [ 'title', 'excerpt' ],
 				'ranking_model'                 => 'google/gemini-2.5-flash',
 				'similarity_candidate_count'    => 50,
 				'max_pre_filtered_candidates'   => 500,
@@ -109,6 +108,7 @@ Rules:
 				'maintenance_schedule'          => 'daily',
 				'fallback_image_url'            => '',
 				'thumbnail_size'                => 'medium',
+				'delete_data_on_uninstall'      => 0,
 			] );
 		}
 
@@ -142,6 +142,16 @@ Rules:
 			}
 		}
 
+		$sanitized['ranking_fields'] = [];
+		if ( isset( $input['ranking_fields'] ) && is_array( $input['ranking_fields'] ) ) {
+			foreach ( $input['ranking_fields'] as $field ) {
+				$sanitized['ranking_fields'][] = sanitize_text_field( $field );
+			}
+		}
+		if ( empty( $sanitized['ranking_fields'] ) ) {
+			$sanitized['ranking_fields'] = [ 'title', 'excerpt' ];
+		}
+
 		$sanitized['indexed_post_types'] = [];
 		if ( isset( $input['indexed_post_types'] ) && is_array( $input['indexed_post_types'] ) ) {
 			foreach ( $input['indexed_post_types'] as $pt ) {
@@ -158,7 +168,7 @@ Rules:
 		$sanitized['max_recommendation_count'] = isset( $input['max_recommendation_count'] ) ? max( 1, intval( $input['max_recommendation_count'] ) ) : 5;
 		$sanitized['daily_embedding_quota'] = isset( $input['daily_embedding_quota'] ) ? max( 0, intval( $input['daily_embedding_quota'] ) ) : 1000;
 		$sanitized['daily_ranking_quota'] = isset( $input['daily_ranking_quota'] ) ? max( 0, intval( $input['daily_ranking_quota'] ) ) : 1000;
-		$sanitized['enable_logging'] = isset( $input['enable_logging'] ) ? 1 : 0;
+		$sanitized['enable_logging'] = ! empty( $input['enable_logging'] ) ? 1 : 0;
 		$sanitized['log_retention'] = isset( $input['log_retention'] ) ? max( 1, intval( $input['log_retention'] ) ) : 7;
 		$sanitized['mutex_lock_ttl'] = isset( $input['mutex_lock_ttl'] ) ? max( 5, intval( $input['mutex_lock_ttl'] ) ) : 60;
 		$sanitized['max_log_rows'] = isset( $input['max_log_rows'] ) ? max( 100, intval( $input['max_log_rows'] ) ) : 5000;
@@ -167,8 +177,8 @@ Rules:
 		$sanitized['log_page_size'] = isset( $input['log_page_size'] ) ? max( 5, min( 100, intval( $input['log_page_size'] ) ) ) : 20;
 		
 		$sanitized['cron_indexing_delay'] = isset( $input['cron_indexing_delay'] ) ? max( 0, intval( $input['cron_indexing_delay'] ) ) : 5;
-		$sanitized['enable_cron_embedding'] = isset( $input['enable_cron_embedding'] ) ? 1 : 0;
-		$sanitized['enable_cron_ranking'] = isset( $input['enable_cron_ranking'] ) ? 1 : 0;
+		$sanitized['enable_cron_embedding'] = ! empty( $input['enable_cron_embedding'] ) ? 1 : 0;
+		$sanitized['enable_cron_ranking'] = ! empty( $input['enable_cron_ranking'] ) ? 1 : 0;
 		$sanitized['cron_interval_minutes'] = isset( $input['cron_interval_minutes'] ) ? max( 1, intval( $input['cron_interval_minutes'] ) ) : 15;
 		$sanitized['cron_embedding_batch_size'] = isset( $input['cron_embedding_batch_size'] ) ? max( 1, intval( $input['cron_embedding_batch_size'] ) ) : 5;
 		$sanitized['cron_ranking_batch_size'] = isset( $input['cron_ranking_batch_size'] ) ? max( 1, intval( $input['cron_ranking_batch_size'] ) ) : 5;
@@ -176,6 +186,7 @@ Rules:
 		$sanitized['maintenance_schedule'] = isset( $input['maintenance_schedule'] ) ? sanitize_key( $input['maintenance_schedule'] ) : 'daily';
 		$sanitized['fallback_image_url'] = isset( $input['fallback_image_url'] ) ? esc_url_raw( $input['fallback_image_url'] ) : '';
 		$sanitized['thumbnail_size'] = isset( $input['thumbnail_size'] ) ? sanitize_key( $input['thumbnail_size'] ) : 'medium';
+		$sanitized['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
 		
 		// Prompt sanitization - preserve linebreaks but strip injection risk markup if needed. Support custom template structure.
 		$sanitized['prompt_template'] = isset( $input['prompt_template'] ) ? sanitize_textarea_field( $input['prompt_template'] ) : '';
@@ -363,101 +374,6 @@ Rules:
 			'html'       => $html,
 			'page'       => $page,
 			'totalPages' => $total_pages,
-		] );
-	}
-
-	public function ajax_bulk_index() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-
-		global $wpdb;
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
-
-		// Find next unindexed post
-		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
-		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
-
-		$batch_size = isset( $settings['cron_embedding_batch_size'] ) ? max( 1, intval( $settings['cron_embedding_batch_size'] ) ) : 5;
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$query = $wpdb->prepare(
-			"SELECT p.ID FROM {$wpdb->posts} p
-			 LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
-			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL
-			 ORDER BY p.ID DESC LIMIT %d",
-			array_merge( [ $emb_model ], $allowed_types, [ $batch_size ] )
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-		$post_ids = $wpdb->get_col( $query );
-
-		if ( empty( $post_ids ) ) {
-			wp_send_json_success( [
-				'done'    => true,
-				'message' => __( 'All posts successfully indexed!', 'pishtop-content-suggestion-with-ai' ),
-			] );
-		}
-
-		// Note: Manual bulk index bypasses daily embedding quota as requested in concept.md
-		define( 'PISHTOP_BYPASS_QUOTA', true );
-
-		$success_count = 0;
-		$processed_ids = [];
-		foreach ( $post_ids as $post_id ) {
-			$text = Matching::build_post_text( $post_id );
-			if ( empty( $text ) ) {
-				// Save empty dummy so we don't block loop
-				Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, array_fill( 0, 1536, 0.0 ) );
-				$success_count++;
-				$processed_ids[] = $post_id;
-				continue;
-			}
-
-			$vector = API::get_embedding( $text, $emb_model );
-
-			if ( is_wp_error( $vector ) ) {
-				/* translators: 1: post ID, 2: error message */
-				$error_msg = sprintf( __( 'Error indexing post %1$d: %2$s', 'pishtop-content-suggestion-with-ai' ), $post_id, $vector->get_error_message() );
-				wp_send_json_error( $error_msg );
-			}
-
-			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
-			$success_count++;
-			$processed_ids[] = $post_id;
-		}
-
-		// Clear counts cache
-		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
-
-		// Pre-calculate recommendations for these newly indexed posts up to ranking batch size
-		$ranking_batch_size = isset( $settings['cron_ranking_batch_size'] ) ? max( 1, intval( $settings['cron_ranking_batch_size'] ) ) : 5;
-		$templates = get_option( 'pishtop_ai_templates', [] );
-		$limit = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
-		$ranking_count = 0;
-		if ( ! empty( $templates ) && ! empty( $processed_ids ) ) {
-			foreach ( $templates as $tpl_id => $tpl ) {
-				$tpl_post_type = $tpl['post_type'] ?? '';
-				foreach ( $processed_ids as $post_id ) {
-					if ( $ranking_count >= $ranking_batch_size ) {
-						break 2;
-					}
-					Matching::get_recommendations( $post_id, $limit, $tpl_id, $tpl_post_type );
-					$ranking_count++;
-				}
-			}
-		}
-
-		/* translators: %d: number of posts indexed */
-		$msg = sprintf( _n( 'Indexed %d post in this batch.', 'Indexed %d posts in this batch.', $success_count, 'pishtop-content-suggestion-with-ai' ), $success_count );
-		wp_send_json_success( [
-			'done'      => false,
-			'processed' => $success_count,
-			'message'   => $msg,
 		] );
 	}
 

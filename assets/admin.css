@@ -1241,3 +1241,20 @@ p.description {
 	box-shadow: none !important;
 }
 
+/* Custom styles for Danger Zone / uninstall data deletion option */
+.danger-zone {
+	background-color: rgba(254, 242, 242, 0.5);
+	border: 1px dashed rgba(220, 38, 38, 0.3);
+	border-radius: 8px;
+	padding: 16px !important;
+}
+
+.pishtop-switch-input:checked + .danger-switch {
+	background-color: #dc2626;
+	border-color: #dc2626;
+}
+
+.pishtop-switch-input:focus-visible + .danger-switch {
+	box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
+}
+

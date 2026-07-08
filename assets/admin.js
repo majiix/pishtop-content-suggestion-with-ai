@@ -48,6 +48,17 @@ jQuery(document).ready(function($) {
 		window.location.hash = $(this).attr('href');
 	});
 
+	// Warning warning box on embedding model change
+	$('#pishtop_embedding_model').on('change', function() {
+		var selected = $(this).val();
+		var initial = $(this).data('initial');
+		if (selected && initial && selected !== initial) {
+			$('#pishtop-embedding-model-warning').removeClass('hidden');
+		} else {
+			$('#pishtop-embedding-model-warning').addClass('hidden');
+		}
+	});
+
 	// Reset Custom Prompt Instructions to default
 	$('#pishtop-reset-prompt-btn').on('click', function(e) {
 		e.preventDefault();
@@ -362,72 +373,6 @@ jQuery(document).ready(function($) {
 	$('.pishtop-modal-close, .pishtop-modal-backdrop').on('click', function() {
 		$('#pishtop-context-modal').addClass('hidden');
 	});
-
-	// Bulk Indexing Controller
-	var isIndexing = false;
-	var indexedCount = 0;
-	var totalToIndex = 0;
-
-	$('#pishtop-start-bulk-index').on('click', function() {
-		if (isIndexing) return;
-
-		totalToIndex = parseInt($(this).data('count'));
-		if (totalToIndex <= 0) return;
-
-		var costWarning = 'Warning: This will perform approximately ' + totalToIndex + ' API requests to generate embeddings. Depending on your OpenRouter model, this will consume API quota and may incur costs. Proceed?';
-		if (!confirm(costWarning)) {
-			return;
-		}
-
-		isIndexing = true;
-		indexedCount = 0;
-		$(this).addClass('disabled').prop('disabled', true);
-		$(this).find('.btn-spinner').removeClass('hidden');
-		$('#pishtop-bulk-index-progress-wrapper').removeClass('hidden');
-		$('#pishtop-bulk-index-progress-bar').css('width', '0%');
-		
-		runNextIndexStep();
-	});
-
-	function runNextIndexStep() {
-		if (!isIndexing) return;
-
-		var $btn = $('#pishtop-start-bulk-index');
-		$btn.html('<span class="btn-spinner"></span> Indexing (' + indexedCount + '/' + totalToIndex + ')...');
-		
-		var pct = Math.min(100, Math.round((indexedCount / totalToIndex) * 100));
-		$('#pishtop-bulk-index-progress-bar').css('width', pct + '%');
-
-		$.post(pishtopSettings.ajaxUrl, {
-			action: 'pishtop_bulk_index_batch',
-			nonce: pishtopSettings.nonce
-		}, function(response) {
-			if (response.success) {
-				if (response.data.done) {
-					isIndexing = false;
-					$btn.html('Done!');
-					$('#pishtop-bulk-index-progress-bar').css('width', '100%');
-					showNotification(response.data.message, 'success');
-					setTimeout(function() {
-						location.reload();
-					}, 1000);
-				} else {
-					indexedCount += (response.data.processed ? parseInt(response.data.processed) : 1);
-					runNextIndexStep();
-				}
-			} else {
-				isIndexing = false;
-				$btn.removeClass('disabled').prop('disabled', false).html('Start Bulk Indexing');
-				$btn.find('.btn-spinner').addClass('hidden');
-				showNotification('Indexing interrupted: ' + (response.data || 'Unknown error.'), 'error');
-			}
-		}).fail(function() {
-			isIndexing = false;
-			$btn.removeClass('disabled').prop('disabled', false).html('Start Bulk Indexing');
-			$btn.find('.btn-spinner').addClass('hidden');
-			showNotification('Network error during indexing.', 'error');
-		});
-	}
 
 	// WordPress Media Library Selector for Fallback Image
 	$('#pishtop_select_fallback_image').on('click', function(e) {

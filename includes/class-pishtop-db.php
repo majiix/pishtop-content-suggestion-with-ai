@@ -122,6 +122,7 @@ class Database {
 
 	/**
 	 * Get candidate post IDs with existing embeddings for similarity search.
+	 */
 	public static function get_candidates( int $post_id, string $lang, string $model, int $limit = 500, string $post_type = '' ) {
 		$cache_key = 'pishtop_candidates_' . $post_id . '_' . md5( $lang . '_' . $model . '_' . $limit . '_' . $post_type );
 		$cached = wp_cache_get( $cache_key, 'pishtop_embeddings' );

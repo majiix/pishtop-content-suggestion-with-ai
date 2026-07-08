@@ -174,21 +174,19 @@ class API {
 		// Prompt injection prevention: sanitize and escape text before prompt injection
 		$escape_chars = [ '{', '}', '[', ']', '"', "'" ];
 		$escaped_replacements = [ '\{', '\}', '\[', '\]', '\"', "\'" ];
-		
-		$current_title   = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $current_post_data['title'] ) );
-		$current_excerpt = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $current_post_data['excerpt'] ) );
 
 		// Prepare user message
 		$candidates_list = [];
 		foreach ( $candidates_data as $candidate ) {
-			$cand_title = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $candidate['title'] ) );
-			$cand_excerpt = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $candidate['excerpt'] ) );
-			$candidates_list[] = sprintf(
-				"ID: %d | Title: %s | Excerpt: %s",
-				$candidate['id'],
-				$cand_title,
-				$cand_excerpt
-			);
+			$cand_fields = [];
+			foreach ( $candidate as $key => $val ) {
+				if ( 'id' === $key ) {
+					continue;
+				}
+				$escaped_val = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $val ) );
+				$cand_fields[] = ucfirst( $key ) . ': ' . $escaped_val;
+			}
+			$candidates_list[] = 'ID: ' . intval( $candidate['id'] ) . ' | ' . implode( ' | ', $cand_fields );
 		}
 		$candidates_text = implode( "\n", $candidates_list );
 
@@ -209,9 +207,11 @@ Rules:
 		}
 
 		$user_message = "Current Post:\n";
-		$user_message .= "Title: {$current_title}\n";
-		$user_message .= "Excerpt: {$current_excerpt}\n\n";
-		$user_message .= "Candidate Posts to select from:\n";
+		foreach ( $current_post_data as $key => $val ) {
+			$escaped_val = str_replace( $escape_chars, $escaped_replacements, wp_strip_all_tags( $val ) );
+			$user_message .= ucfirst( $key ) . ": {$escaped_val}\n";
+		}
+		$user_message .= "\nCandidate Posts to select from:\n";
 		$user_message .= $candidates_text;
 
 		\pishtop_log( 'DEBUG', 'Sending LLM ranking request to OpenRouter', [ 'model' => $model, 'candidates_count' => count( $candidates_data ) ] );
