@@ -261,6 +261,7 @@ class Matching {
 		$args = [
 			'post_type'      => $post->post_type,
 			'posts_per_page' => $count,
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 			'post__not_in'   => [ $post_id ],
 			'fields'         => 'ids',
 			'post_status'    => 'publish',
@@ -293,6 +294,7 @@ class Matching {
 				if ( count( $tax_query ) > 1 ) {
 					$tax_query['relation'] = 'OR';
 				}
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				$args['tax_query'] = $tax_query;
 			}
 		}
@@ -330,6 +332,7 @@ class Matching {
 		global $wpdb;
 		// Delete all transients matching pishtop_rec_{post_id}_*
 		$wildcard = '_transient_pishtop_rec_' . $post_id . '_%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wildcard ) );
 	}
 }

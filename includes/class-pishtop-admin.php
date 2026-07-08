@@ -172,7 +172,7 @@ Rules:
 
 	public function render_settings_page() {
 		// Handle template editing form submission directly here
-		if ( isset( $_POST['pishtop_templates_nonce'] ) && \pishtop_verify_admin_action( 'pishtop_save_templates', 'pishtop_templates_nonce' ) ) {
+		if ( current_user_can( 'manage_options' ) && isset( $_POST['pishtop_templates_nonce'] ) && wp_verify_nonce( sanitize_key( wp_unslash( $_POST['pishtop_templates_nonce'] ) ), 'pishtop_save_templates' ) ) {
 			$this->handle_templates_save();
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Templates updated successfully.', 'pishtop-content-suggestion-with-ai' ) . '</p></div>';
 		}
@@ -186,19 +186,25 @@ Rules:
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
 
-		$total_posts_query = $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ($placeholders)",
-			$allowed_types
-		);
-		$total_posts = (int) $wpdb->get_var( $total_posts_query );
+		$cache_key_total = 'pishtop_total_posts_' . md5( serialize( $allowed_types ) );
+		$total_posts = wp_cache_get( $cache_key_total, 'pishtop_posts' );
+		if ( false === $total_posts ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$total_posts_query = $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ($placeholders)", $allowed_types );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			$total_posts = (int) $wpdb->get_var( $total_posts_query );
+			wp_cache_set( $cache_key_total, $total_posts, 'pishtop_posts', 300 );
+		}
 
-		$indexed_posts_query = $wpdb->prepare(
-			"SELECT COUNT(DISTINCT emb.post_id) FROM {$wpdb->prefix}pishtop_post_embeddings emb
-			 JOIN {$wpdb->posts} p ON emb.post_id = p.ID
-			 WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders)",
-			$allowed_types
-		);
-		$indexed_posts = (int) $wpdb->get_var( $indexed_posts_query );
+		$cache_key_indexed = 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) );
+		$indexed_posts = wp_cache_get( $cache_key_indexed, 'pishtop_posts' );
+		if ( false === $indexed_posts ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$indexed_posts_query = $wpdb->prepare( "SELECT COUNT(DISTINCT emb.post_id) FROM {$wpdb->prefix}pishtop_post_embeddings emb JOIN {$wpdb->posts} p ON emb.post_id = p.ID WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders)", $allowed_types );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			$indexed_posts = (int) $wpdb->get_var( $indexed_posts_query );
+			wp_cache_set( $cache_key_indexed, $indexed_posts, 'pishtop_posts', 300 );
+		}
 		$unindexed_posts = max( 0, $total_posts - $indexed_posts );
 
 		// Load template markup
@@ -206,21 +212,30 @@ Rules:
 	}
 
 	private function handle_templates_save() {
-		if ( empty( $_POST['templates'] ) || ! is_array( $_POST['templates'] ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		if ( ! isset( $_POST['pishtop_templates_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['pishtop_templates_nonce'] ) ), 'pishtop_save_templates' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$templates_post = isset( $_POST['templates'] ) ? wp_unslash( $_POST['templates'] ) : [];
+		if ( empty( $templates_post ) || ! is_array( $templates_post ) ) {
 			return;
 		}
 
 		$updated_templates = [];
-		foreach ( $_POST['templates'] as $tpl ) {
+		foreach ( $templates_post as $tpl ) {
 			if ( empty( $tpl['id'] ) ) {
 				continue;
 			}
 			$id = sanitize_key( $tpl['id'] );
 			$updated_templates[ $id ] = [
 				'id'           => $id,
-				'wrapper_html' => wp_kses_post( wp_unslash( $tpl['wrapper_html'] ) ),
-				'item_html'    => wp_kses_post( wp_unslash( $tpl['item_html'] ) ),
-				'custom_css'   => sanitize_textarea_field( wp_unslash( $tpl['custom_css'] ) ),
+				'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
+				'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
+				'custom_css'   => sanitize_textarea_field( $tpl['custom_css'] ?? '' ),
 			];
 		}
 
@@ -229,13 +244,18 @@ Rules:
 
 	// AJAX endpoints
 	public function ajax_clear_cache() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
 		global $wpdb;
 		// Delete all recommendation transients
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pishtop_rec_%'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pishtop_rec_%'" );
 
 		\pishtop_log( 'INFO', 'Recommendation cache cleared manually.' );
@@ -243,19 +263,31 @@ Rules:
 	}
 
 	public function ajax_clear_embeddings() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}pishtop_post_embeddings" );
+
+		// Clear counts cache
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
 
 		\pishtop_log( 'INFO', 'Embeddings cache cleared manually. Full regeneration required.' );
 		wp_send_json_success( __( 'Embeddings database cleared.', 'pishtop-content-suggestion-with-ai' ) );
 	}
 
 	public function ajax_clear_logs() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
@@ -264,13 +296,16 @@ Rules:
 	}
 
 	public function ajax_get_logs() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
 		$page   = isset( $_GET['log_page'] ) ? max( 1, intval( $_GET['log_page'] ) ) : 1;
-		$level  = isset( $_GET['log_level'] ) ? sanitize_text_field( $_GET['log_level'] ) : '';
-		$search = isset( $_GET['log_search'] ) ? sanitize_text_field( $_GET['log_search'] ) : '';
+		$level  = isset( $_GET['log_level'] ) ? sanitize_text_field( wp_unslash( $_GET['log_level'] ) ) : '';
+		$search = isset( $_GET['log_search'] ) ? sanitize_text_field( wp_unslash( $_GET['log_search'] ) ) : '';
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$limit  = isset( $settings['log_page_size'] ) ? max( 5, intval( $settings['log_page_size'] ) ) : 20;
 		$offset = ( $page - 1 ) * $limit;
@@ -318,7 +353,10 @@ Rules:
 	}
 
 	public function ajax_bulk_index() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
@@ -330,14 +368,10 @@ Rules:
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
 
-		$query = $wpdb->prepare(
-			"SELECT p.ID FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s
-			WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL
-			ORDER BY p.ID DESC LIMIT 1",
-			array_merge( [ $emb_model ], $allowed_types )
-		);
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$query = $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$wpdb->prefix}pishtop_post_embeddings emb ON p.ID = emb.post_id AND emb.embedding_model = %s WHERE p.post_status = 'publish' AND p.post_type IN ($placeholders) AND emb.post_id IS NULL ORDER BY p.ID DESC LIMIT 1", array_merge( [ $emb_model ], $allowed_types ) );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$post_id = (int) $wpdb->get_var( $query );
 
 		if ( ! $post_id ) {
@@ -351,37 +385,47 @@ Rules:
 		if ( empty( $text ) ) {
 			// Save empty dummy so we don't block loop
 			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, array_fill( 0, 1536, 0.0 ) );
+			// Clear counts cache
+			wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
+
+			/* translators: %d: post ID */
+			$msg = sprintf( __( 'Skipped post %d (no indexable content).', 'pishtop-content-suggestion-with-ai' ), $post_id );
 			wp_send_json_success( [
 				'done'    => false,
 				'indexed' => $post_id,
-				'message' => sprintf( __( 'Skipped post %d (no indexable content).', 'pishtop-content-suggestion-with-ai' ), $post_id ),
+				'message' => $msg,
 			] );
 		}
 
 		// Note: Manual bulk index bypasses daily embedding quota as requested in concept.md
-		// We dynamically bypass API::check_quota by setting check_quota logic context, or calling it.
-		// Wait, let's make API check quota configurable or manually bypassable.
-		// Let's call OpenRouter API directly or pass a flag to bypass quota.
-		// Let's modify API class to allow quota bypass or define a bypass constant during bulk index!
 		define( 'PISHTOP_BYPASS_QUOTA', true );
 
 		$vector = API::get_embedding( $text, $emb_model );
 
 		if ( is_wp_error( $vector ) ) {
-			wp_send_json_error( sprintf( __( 'Error indexing post %d: %s', 'pishtop-content-suggestion-with-ai' ), $post_id, $vector->get_error_message() ) );
+			/* translators: 1: post ID, 2: error message */
+			$error_msg = sprintf( __( 'Error indexing post %1$d: %2$s', 'pishtop-content-suggestion-with-ai' ), $post_id, $vector->get_error_message() );
+			wp_send_json_error( $error_msg );
 		}
 
 		Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
+		// Clear counts cache
+		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
 
+		/* translators: 1: post ID, 2: post title */
+		$success_msg = sprintf( __( 'Indexed post %1$d ("%2$s") successfully.', 'pishtop-content-suggestion-with-ai' ), $post_id, get_the_title( $post_id ) );
 		wp_send_json_success( [
 			'done'    => false,
 			'indexed' => $post_id,
-			'message' => sprintf( __( 'Indexed post %d ("%s") successfully.', 'pishtop-content-suggestion-with-ai' ), $post_id, get_the_title( $post_id ) ),
+			'message' => $success_msg,
 		] );
 	}
 
 	public function ajax_load_models() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
@@ -395,11 +439,18 @@ Rules:
 	}
 
 	public function ajax_save_settings() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
-		$settings = isset( $_POST['pishtop_ai_settings'] ) ? $_POST['pishtop_ai_settings'] : [];
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$settings = isset( $_POST['pishtop_ai_settings'] ) ? wp_unslash( $_POST['pishtop_ai_settings'] ) : [];
+		if ( ! is_array( $settings ) ) {
+			$settings = [];
+		}
 		$sanitized = $this->sanitize_settings( $settings );
 		
 		update_option( 'pishtop_ai_settings', $sanitized );
@@ -408,25 +459,30 @@ Rules:
 	}
 
 	public function ajax_save_templates() {
-		if ( ! \pishtop_verify_admin_action() ) {
+		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
-		if ( empty( $_POST['templates'] ) || ! is_array( $_POST['templates'] ) ) {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$templates_post = isset( $_POST['templates'] ) ? wp_unslash( $_POST['templates'] ) : [];
+		if ( empty( $templates_post ) || ! is_array( $templates_post ) ) {
 			wp_send_json_error( __( 'No templates data received.', 'pishtop-content-suggestion-with-ai' ) );
 		}
 
 		$updated_templates = [];
-		foreach ( $_POST['templates'] as $tpl ) {
+		foreach ( $templates_post as $tpl ) {
 			if ( empty( $tpl['id'] ) ) {
 				continue;
 			}
 			$id = sanitize_key( $tpl['id'] );
 			$updated_templates[ $id ] = [
 				'id'           => $id,
-				'wrapper_html' => wp_kses_post( wp_unslash( $tpl['wrapper_html'] ) ),
-				'item_html'    => wp_kses_post( wp_unslash( $tpl['item_html'] ) ),
-				'custom_css'   => wp_strip_all_tags( wp_unslash( $tpl['custom_css'] ) ),
+				'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
+				'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
+				'custom_css'   => wp_strip_all_tags( $tpl['custom_css'] ?? '' ),
 			];
 		}
 

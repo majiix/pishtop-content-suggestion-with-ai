@@ -1,6 +1,6 @@
 === PishTop Content Suggestion with AI ===
 Contributors: pishtop
-Tags: related posts, content suggestions, ai recommendations, openrouter, vector embeddings, similarity search, semantic search, machine learning
+Tags: related posts, ai recommendations, vector embeddings, semantic search, openrouter
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4

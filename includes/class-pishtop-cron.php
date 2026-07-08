@@ -127,7 +127,7 @@ class Cron {
 		// Clean up logs older than retention days
 		$table = $wpdb->prefix . 'pishtop_logs';
 		$threshold_date = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
-		
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold_date ) );
 		\pishtop_log( 'INFO', sprintf( 'Daily maintenance: Deleted %d old log entries.', $deleted ) );
 
