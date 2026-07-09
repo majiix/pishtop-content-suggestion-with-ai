@@ -167,18 +167,29 @@ class Matching {
 
 		// 3. Compute cosine similarities in PHP
 		$scored = [];
+		$enable_llm = ! isset( $settings['enable_llm_reranking'] ) || ! empty( $settings['enable_llm_reranking'] );
+		$threshold = ( isset( $settings['similarity_threshold_percent'] ) ? intval( $settings['similarity_threshold_percent'] ) : 40 ) / 100.0;
+
 		foreach ( $candidates as $candidate ) {
 			$score = self::cosine_similarity( $current_vector, $candidate['embedding'] );
-			$scored[] = [
-				'id'    => $candidate['post_id'],
-				'score' => $score,
-			];
+			if ( $enable_llm || $score >= $threshold ) {
+				$scored[] = [
+					'id'    => $candidate['post_id'],
+					'score' => $score,
+				];
+			}
 		}
 
 		// Sort by similarity score descending
 		usort( $scored, function ( $a, $b ) {
 			return $b['score'] <=> $a['score'];
 		} );
+
+		if ( ! $enable_llm ) {
+			// Embedding-only phase: return top sorted candidates directly
+			$result_ids = array_column( $scored, 'id' );
+			return array_slice( $result_ids, 0, $count );
+		}
 
 		// Slice top similarity candidates
 		$top_similarity = array_slice( $scored, 0, $sim_limit );

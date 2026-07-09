@@ -54,6 +54,8 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Cache-miss background ranking checks ensuring pre-cached recommendations are served directly from transients even under active cron workers
 * Mandatory templates validation in JavaScript: enforces non-empty Wrapper HTML and Item HTML, and verifies Wrapper HTML contains `{{items}}` prior to form submission
 * Conditional metadata placeholders: supports single or fallback placeholders like `{{meta:custom_key | {{title}} }}` evaluating recursively from outside-in
+* Embedding-only matching mode: optionally bypasses OpenRouter LLM re-ranking entirely to save cost and increase performance
+* Configurable similarity threshold: allows filtering out match candidates below a certain similarity percentage (0-100%) in the embedding-only phase
 
 ## Verification Commands
 * standalone similarity and syntax check:

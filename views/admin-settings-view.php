@@ -306,6 +306,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 
 				<div class="form-row">
+					<label><?php esc_html_e( 'Enable LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" name="pishtop_ai_settings[enable_llm_reranking]" value="1" <?php checked( $settings['enable_llm_reranking'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'If enabled, candidates will be re-ranked using OpenRouter LLM. If disabled, candidates are recommended based purely on vector similarity (embedding phase).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label for="pishtop_similarity_threshold_percent"><?php esc_html_e( 'Similarity Threshold (%)', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<div class="input-unit-group">
+							<input type="number" id="pishtop_similarity_threshold_percent" name="pishtop_ai_settings[similarity_threshold_percent]" value="<?php echo esc_attr( $settings['similarity_threshold_percent'] ?? 40 ); ?>" min="0" max="100" class="small-text" />
+							<span class="input-unit">%</span>
+						</div>
+						<p class="description"><?php esc_html_e( 'Only candidates with a vector cosine similarity score greater than or equal to this percentage will be recommended when LLM Re-ranking is disabled.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
 					<label for="pishtop_ranking_model"><?php esc_html_e( 'LLM Re-ranking Model', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<select id="pishtop_ranking_model" name="pishtop_ai_settings[ranking_model]" class="pishtop-model-select loading">
@@ -783,11 +805,11 @@ Rules:
 					<p><strong><?php esc_html_e( 'Step 1: SQL Pre-filtering & Ceiling', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Filters candidates in SQL by post types, categories/tags, and active model. Limits database retrieval (SQL Candidate Ceiling) to prevent memory issues.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
-					<p><strong><?php esc_html_e( 'Step 2: Cosine Similarity', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'PHP calculates mathematical cosine similarity between the current post\'s text embedding and all candidate vectors. The top similarity matches (e.g. 50 items) are kept.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<p><strong><?php esc_html_e( 'Step 2: Cosine Similarity & Threshold', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'PHP calculates mathematical cosine similarity between the current post\'s text embedding and all candidate vectors. If LLM Re-ranking is disabled, candidates are filtered based on the configured Similarity Threshold percent, and sorted by score.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
-					<p><strong><?php esc_html_e( 'Step 3: LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'Sends top similarity candidates to the selected OpenRouter Chat LLM. System instructions block prompt injection by treating titles/excerpts strictly as raw semantic data.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<p><strong><?php esc_html_e( 'Step 3: LLM Re-ranking (Optional)', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'If enabled, sends top similarity candidates to the selected OpenRouter Chat LLM for a final re-ordering based on text contexts. If disabled (Embedding-Only mode), this step is completely bypassed to save API costs and improve performance.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
 					<p><strong><?php esc_html_e( 'Step 4: Hybrid Fallback & Sorting', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'If the AI response is smaller than the requested count, it is filled using similarity candidates. AI matches stay on top. The final recommendation output can be sorted by: Similarity, Random, Date Descending, Date Ascending, or Title Ascending.', 'pishtop-content-suggestion-with-ai' ); ?></p>

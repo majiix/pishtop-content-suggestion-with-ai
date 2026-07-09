@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,6 +17,8 @@ PishTop Content Suggestion with AI is a next-generation related posts plugin tha
 To achieve maximum precision, the plugin performs local similarity pre-filtering and passes the top candidates to a selected OpenRouter Chat LLM (e.g., Gemini, GPT-4) for a final re-ranking step.
 
 = Key Features =
+* **Embedding-Only Mode:** Option to completely bypass the OpenRouter LLM re-ranking phase, using raw vector similarity to fetch recommendations locally, cutting API billing and optimizing site performance.
+* **Configurable Similarity Threshold:** Enforce similarity score limits (0-100%) in the embedding-only phase to filter out low-relevance match candidates.
 * **Local Vector Storage:** Custom database tables store text embedding vectors, preventing external API calls on every recommendation render.
 * **Embedding Model Versioning:** Embeddings are versioned with the model ID. Stale embeddings (e.g., if you change models) are automatically filtered out.
 * **OpenRouter.ai Integration:** Fetch high-quality text embeddings and perform LLM re-ranking using state-of-the-art models.
@@ -47,6 +49,9 @@ The plugin automatically pulls all available embedding and chat models from the 
 = How do cost budgets work? =
 You can set daily quota limits for both embedding generation and LLM re-ranking. Once a limit is reached, the plugin will seamlessly fall back to native WordPress matching to prevent any additional charges. Quotas reset at local midnight.
 
+= Can I bypass the LLM re-ranking phase? =
+Yes! Under the Matching Engine settings tab, you can disable the "Enable LLM Re-ranking" option. In this "Embedding-Only" mode, the plugin recommends items based purely on their local vector similarity, completely bypassing the OpenRouter LLM chat API call to save on cost and improve page load speeds. You can also configure a "Similarity Threshold (%)" so only items above a certain similarity match score are recommended.
+
 = Does it support WooCommerce pages? =
 Yes! When used inside WooCommerce Cart, Checkout, or Order Received (Thank You) pages, the plugin dynamically extracts active cart products or purchased order items to match suggestions, rather than using generic page titles. Out-of-stock items can also be hidden.
 
@@ -73,6 +78,8 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cache Actions:** Buttons to clear recommendation cache or clear all embeddings.
 
 = Matching Engine =
+* **Enable LLM Re-ranking:** Toggle switch to enable/disable the OpenRouter chat API reordering phase.
+* **Similarity Threshold (%):** Minimum similarity score percent required for recommendations (available when LLM Re-ranking is disabled).
 * **Embedding Model:** OpenRouter embedding vector model.
 * **Embedding Fields:** Checkboxes to select which fields are concatenated for embeddings (Title, Excerpt, Content, Taxonomies, Custom Fields).
 * **Ranking Model:** Chat model for LLM re-ranking.
@@ -102,6 +109,11 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.2.0 =
+* Introduce Embedding-Only matching phase to completely bypass the OpenRouter LLM re-ranking step, saving on API costs and server overhead.
+* Implement a configurable Similarity Threshold (0-100%) setting to filter out low-relevance candidate recommendations.
+* Update settings in-app documentation and help tabs to cover the new features.
 
 = 1.1.0 =
 * Bypass database embedding storage and retrieval for WooCommerce dynamic pages (Cart, Checkout, and Thank You) to prevent different users from receiving mixed-up cart recommendations.
