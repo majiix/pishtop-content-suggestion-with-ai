@@ -206,8 +206,8 @@ class Frontend {
 		$post_date = esc_html( get_the_date( '', $post ) );
 
 		$html = str_replace(
-			[ '{{title}}', '{{permalink}}', '{{image_url}}', '{{excerpt}}', '{{post_date}}' ],
-			[ $title, $permalink, $image_url, $excerpt, $post_date ],
+			[ '{{title}}', '{{permalink}}', '{{image_url}}', '{{excerpt}}', '{{post_date}}', '{{post_id}}', '{{id}}' ],
+			[ $title, $permalink, $image_url, $excerpt, $post_date, $id, $id ],
 			$html
 		);
 

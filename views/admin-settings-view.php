@@ -7,7 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap pishtop-admin-wrap">
 	<header class="pishtop-header">
 		<div class="pishtop-brand">
-			<span class="pishtop-logo-glow"></span>
 			<h1><?php esc_html_e( 'PishTop Content Suggestions', 'pishtop-content-suggestion-with-ai' ); ?></h1>
 			<span class="pishtop-badge"><?php echo esc_html( PISHTOP_AI_VERSION ); ?></span>
 		</div>
@@ -667,7 +666,7 @@ Rules:
 				<p class="description" style="margin-bottom: 20px;">
 					<?php esc_html_e( 'Templates are invoked via shortcode [pishtop_suggestions template="template_id"].', 'pishtop-content-suggestion-with-ai' ); ?><br>
 					<strong><?php esc_html_e( 'Placeholders:', 'pishtop-content-suggestion-with-ai' ); ?></strong>
-					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{meta:custom_key}}</code>, <code>{{price:price_key}}</code>
+					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{post_id}}</code>, <code>{{id}}</code>, <code>{{meta:custom_key}}</code>, <code>{{price:price_key}}</code>
 				</p>
 
 				<div id="pishtop-templates-repeater">
@@ -693,7 +692,7 @@ Rules:
 									</button>
 								</div>
 							</div>
-							
+
 							<div class="template-card-body">
 								<div class="template-header-row" style="margin-top: 15px;">
 									<div class="template-id-wrapper">
@@ -756,7 +755,7 @@ Rules:
 	<div id="tab-help" class="pishtop-tab-content">
 		<div class="pishtop-card">
 			<h2><?php esc_html_e( 'Help & Documentation', 'pishtop-content-suggestion-with-ai' ); ?></h2>
-			
+
 			<div class="help-section-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
 				<div>
 					<h3>1. <?php esc_html_e( 'Shortcode & Block Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
@@ -772,7 +771,7 @@ Rules:
 					<p style="margin-top: 10px;"><strong><?php esc_html_e( 'Gutenberg Block:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
 					<p><?php esc_html_e( 'Insert the "PishTop AI Suggestions" block in Gutenberg. Includes block settings for Count, Display Template, and target post type.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
-				
+
 				<div>
 					<h3>2. <?php esc_html_e( 'Template System & Custom Fields', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><?php esc_html_e( 'Design repeater layouts and item markup. Placeholders are dynamically interpolated during render:', 'pishtop-content-suggestion-with-ai' ); ?></p>
@@ -783,6 +782,7 @@ Rules:
 							<tr><td><code>{{image_url}}</code></td><td><?php esc_html_e( 'Featured image source (uses placeholder or fallback if empty)', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{excerpt}}</code></td><td><?php esc_html_e( 'Short summary description of content', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{post_date}}</code></td><td><?php esc_html_e( 'Date of publication', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{post_id}}</code> / <code>{{id}}</code></td><td><?php esc_html_e( 'Unique identifier of the post', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{meta:key_name}}</code></td><td><?php esc_html_e( 'Fetches custom postmeta key value', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{price:key_name}}</code></td><td><?php esc_html_e( 'WooCommerce formatted currency price value (e.g. {{price:_price}})', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 						</tbody>
@@ -797,22 +797,22 @@ Rules:
 					<h3>3. <?php esc_html_e( 'Matching Engine & Final Sorting', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><strong><?php esc_html_e( 'Step 1: SQL Pre-filtering & Ceiling', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Filters candidates in SQL by post types, categories/tags, and active model. Limits database retrieval (SQL Candidate Ceiling) to prevent memory issues.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<p><strong><?php esc_html_e( 'Step 2: Cosine Similarity', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'PHP calculates mathematical cosine similarity between the current post\'s text embedding and all candidate vectors. The top similarity matches (e.g. 50 items) are kept.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<p><strong><?php esc_html_e( 'Step 3: LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Sends top similarity candidates to the selected OpenRouter Chat LLM. System instructions block prompt injection by treating titles/excerpts strictly as raw semantic data.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
 					<p><strong><?php esc_html_e( 'Step 4: Hybrid Fallback & Sorting', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'If the AI response is smaller than the requested count, it is filled using similarity candidates. AI matches stay on top. The final recommendation output can be sorted by: Similarity, Random, Date Descending, Date Ascending, or Title Ascending.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
-				
+
 				<div>
 					<h3>4. <?php esc_html_e( 'Caching & Mutex Stampede Protection', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><strong><?php esc_html_e( 'Transient Caching', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Recommendations are cached in WordPress transients using configurable TTL durations (Hours/Days) to prevent duplicate API costs.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<p><strong><?php esc_html_e( 'Mutex Lock (Cache Stampede Protection)', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'During cache expiration, if multiple visitors request the same popular page concurrently, only the first request queries OpenRouter. Subsequent concurrent requests immediately receive fallback category recommendations rather than blocking the visitors or duplicate billing. Configurable Mutex Lock TTL controls the transient safety window.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
@@ -851,7 +851,7 @@ Rules:
 					<h3>7. <?php esc_html_e( 'API Quotas & Viewport Lazy Loading', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><strong><?php esc_html_e( 'Dual Daily API Quotas', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Admins can configure separate daily limits for embedding generation requests (indexing) and LLM re-ranking requests (retrieval) to prevent surprise bills. Once reached, fallback recommendations are rendered.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<p><strong><?php esc_html_e( 'Timezone-Aligned Resets', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Daily usage counts reset automatically at midnight. Resets are aligned to the WordPress local timezone setting to avoid timezone drift.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
@@ -863,7 +863,7 @@ Rules:
 					<h3>8. <?php esc_html_e( 'Log Caps & Warning Console', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><strong><?php esc_html_e( 'Row Capacity & Retention Pruning', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'Diagnostics logs are stored in a custom database table capped at 5,000 rows. Periodic cron runs clean up rows older than the retention period.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<p><strong><?php esc_html_e( 'Ratio-Based Pruning', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'To prevent database strain from repeated delete queries, pruning deletes rows down to a configured cleanup threshold ratio (e.g. 90% of capacity).', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
@@ -874,7 +874,7 @@ Rules:
 				<div style="grid-column: span 2;">
 					<h3>9. <?php esc_html_e( 'Developer API Hooks & Filters', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><?php esc_html_e( 'Extend or override plugin functionality using standard WordPress filters in your theme\'s functions.php or custom plugin:', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					
+
 					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px;">
 						<div>
 							<p><strong><code>pishtop_ai_post_text</code></strong> – <?php esc_html_e( 'Filter raw concatenated content text before generating embeddings.', 'pishtop-content-suggestion-with-ai' ); ?></p>
@@ -938,7 +938,7 @@ Rules:
 				</button>
 			</div>
 		</div>
-		
+
 		<div class="template-card-body">
 			<div class="template-header-row" style="margin-top: 15px;">
 				<div class="template-id-wrapper">

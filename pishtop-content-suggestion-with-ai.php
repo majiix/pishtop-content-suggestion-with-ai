@@ -3,10 +3,11 @@
  * Plugin Name: PishTop Content Suggestion with AI
  * Plugin URI:  https://wordpress.org/plugins/pishtop-content-suggestion-with-ai
  * Description: AI-powered related post recommendations using OpenRouter.ai and local vector embeddings.
- * Version:     1.0.0
+ * Version:     1.0.3
  * Author:      micromax
  * License:     GPL2
  * Text Domain: pishtop-content-suggestion-with-ai
+ * Requires at least: 6.0
  * Requires PHP: 7.4
  * Domain Path: /languages
  * License: GPL-2.0-or-later
@@ -17,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PISHTOP_AI_VERSION', '1.0.0' );
+define( 'PISHTOP_AI_VERSION', '1.0.3' );
 define( 'PISHTOP_AI_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PISHTOP_AI_URL', plugin_dir_url( __FILE__ ) );
 

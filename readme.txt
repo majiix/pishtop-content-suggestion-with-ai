@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.3
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,7 +98,7 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 
 = Display Templates =
 * **Layout CSS Toggle:** Toggle loading built-in styles.
-* **Repeater List:** Create custom CSS/HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price:key}}`), and Custom CSS.
+* **Repeater List:** Create custom CSS/HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, `{{post_id}}`, `{{id}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price:key}}`), and Custom CSS.
 
 = Logging & Diagnostics =
 * **Enable Logging:** Toggle logging console.
@@ -108,6 +108,17 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.0.3 =
+* Bypass transient cache lookups entirely during active background indexing or ranking runs to always serve fresh native fallback posts.
+
+= 1.0.2 =
+* Enforce native fallback rendering during active background indexing or ranking runs.
+
+= 1.0.1 =
+* Expand in-app Help and Documentation tab with comprehensive user guidelines.
+* Add shortcut Settings link on Plugins list screen.
+* Support {{post_id}} and {{id}} template layout placeholders.
 
 = 1.0.0 =
 * Initial release. Expose all parameters, timeouts, logging rates, delays, and customization options to the administrator dashboard.

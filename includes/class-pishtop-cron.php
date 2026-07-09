@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Cron {
 
 	private static $instance = null;
+	public static $is_running_worker = false;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -210,17 +211,22 @@ class Cron {
 	 * Periodic cron worker execution callback.
 	 */
 	public function run_cron_worker() {
-		update_option( 'pishtop_ai_cron_last_run', time() );
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
-		$enable_ranking = isset( $settings['enable_cron_ranking'] ) ? (bool) $settings['enable_cron_ranking'] : false;
+		self::$is_running_worker = true;
+		try {
+			update_option( 'pishtop_ai_cron_last_run', time() );
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+			$enable_ranking = isset( $settings['enable_cron_ranking'] ) ? (bool) $settings['enable_cron_ranking'] : false;
 
-		if ( $enable_embedding ) {
-			$this->run_embedding_worker( $settings );
-		}
+			if ( $enable_embedding ) {
+				$this->run_embedding_worker( $settings );
+			}
 
-		if ( $enable_ranking ) {
-			$this->run_ranking_worker( $settings );
+			if ( $enable_ranking ) {
+				$this->run_ranking_worker( $settings );
+			}
+		} finally {
+			self::$is_running_worker = false;
 		}
 	}
 

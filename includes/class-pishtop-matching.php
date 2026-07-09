@@ -48,6 +48,16 @@ class Matching {
 
 		$ai_count = min( $count, $max_ai_count );
 
+		// Check if background indexing or ranking is active/enabled (and not in cron worker context)
+		$is_cron_ranking = ! empty( $settings['enable_cron_ranking'] ) && ! Cron::$is_running_worker;
+
+		if ( self::has_unindexed_posts() || $is_cron_ranking ) {
+			$reason = self::has_unindexed_posts() ? 'Indexing' : 'Background ranking';
+			\pishtop_log( 'INFO', "{$reason} in progress. Returning native fallback directly for post {$post_id}." );
+			$fallback_ids = self::get_native_fallback( $post_id, $count, $post_type );
+			return self::apply_final_sorting( $fallback_ids );
+		}
+
 		// 2. Fetch AI suggestions (either from cache or by querying API)
 		$ai_ids = [];
 		if ( $ai_count > 0 ) {
@@ -59,36 +69,31 @@ class Matching {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
 			} else {
 				// Cache miss.
-				if ( self::has_unindexed_posts() ) {
-					\pishtop_log( 'INFO', "Indexing in progress. Returning native fallback for post {$post_id}." );
+				// Mutex Cache Stampede Protection
+				$lock_key = "pishtop_lock_{$post_id}";
+				$is_locked = get_transient( $lock_key );
+
+				if ( $is_locked ) {
+					\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
 					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 				} else {
-					// Mutex Cache Stampede Protection
-					$lock_key = "pishtop_lock_{$post_id}";
-					$is_locked = get_transient( $lock_key );
+					// Acquire Lock
+					$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
+					set_transient( $lock_key, true, $lock_ttl );
 
-					if ( $is_locked ) {
-						\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
-						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+					// Fetch $max_ai_count posts from AI
+					$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
+
+					// Release Lock
+					delete_transient( $lock_key );
+
+					if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
+						set_transient( $transient_key, $api_ids, $cache_ttl );
+						$ai_ids = array_slice( $api_ids, 0, $ai_count );
 					} else {
-						// Acquire Lock
-						$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
-						set_transient( $lock_key, true, $lock_ttl );
-
-						// Fetch $max_ai_count posts from AI
-						$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
-
-						// Release Lock
-						delete_transient( $lock_key );
-
-						if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
-							set_transient( $transient_key, $api_ids, $cache_ttl );
-							$ai_ids = array_slice( $api_ids, 0, $ai_count );
-						} else {
-							// Cache failure for 300 seconds to protect site speed
-							set_transient( $transient_key, [], 300 );
-							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
-						}
+						// Cache failure for 300 seconds to protect site speed
+						set_transient( $transient_key, [], 300 );
+						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 					}
 				}
 			}

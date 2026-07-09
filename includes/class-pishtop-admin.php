@@ -24,6 +24,10 @@ class Admin {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
+		// Register plugin action links
+		$plugin_basename = plugin_basename( PISHTOP_AI_PATH . 'pishtop-content-suggestion-with-ai.php' );
+		add_filter( "plugin_action_links_{$plugin_basename}", [ $this, 'add_settings_link' ] );
+
 		// AJAX action handlers
 		add_action( 'wp_ajax_pishtop_clear_cache', [ $this, 'ajax_clear_cache' ] );
 		add_action( 'wp_ajax_pishtop_clear_embeddings', [ $this, 'ajax_clear_embeddings' ] );
@@ -465,5 +469,17 @@ Rules:
 
 		update_option( 'pishtop_ai_templates', $updated_templates );
 		wp_send_json_success( __( 'Templates saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
+	}
+
+	/**
+	 * Add settings link to the plugin action links.
+	 *
+	 * @param array $links Array of action links.
+	 * @return array Updated action links.
+	 */
+	public function add_settings_link( array $links ): array {
+		$settings_link = '<a href="' . esc_url( admin_url( 'options-general.php?page=pishtop-ai-suggestions' ) ) . '">' . esc_html__( 'Settings', 'pishtop-content-suggestion-with-ai' ) . '</a>';
+		array_unshift( $links, $settings_link );
+		return $links;
 	}
 }
