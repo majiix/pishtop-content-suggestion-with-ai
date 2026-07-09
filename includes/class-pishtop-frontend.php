@@ -299,7 +299,7 @@ class Frontend {
 
 		// 1. Cart Page
 		if ( $post_id === $cart_page_id || ( is_cart() && get_the_ID() === $post_id ) ) {
-			if ( WC()->cart ) {
+			if ( function_exists( 'WC' ) && WC() && WC()->cart ) {
 				$cart_items = WC()->cart->get_cart();
 				$names = [];
 				foreach ( $cart_items as $item ) {
@@ -354,7 +354,7 @@ class Frontend {
 			}
 
 			// Fallback: active cart items if checkout page
-			if ( WC()->cart ) {
+			if ( function_exists( 'WC' ) && WC() && WC()->cart ) {
 				$cart_items = WC()->cart->get_cart();
 				$names = [];
 				foreach ( $cart_items as $item ) {
@@ -385,7 +385,7 @@ class Frontend {
 
 		// 1. Cart Page (cache unique to cart contents hash)
 		if ( $post_id === $cart_page_id ) {
-			if ( WC()->cart ) {
+			if ( function_exists( 'WC' ) && WC() && WC()->cart ) {
 				$cart_items = WC()->cart->get_cart();
 				$ids = [];
 				foreach ( $cart_items as $item ) {
@@ -428,7 +428,7 @@ class Frontend {
 				return $key . '_order_' . $order_id;
 			}
 
-			if ( WC()->cart ) {
+			if ( function_exists( 'WC' ) && WC() && WC()->cart ) {
 				$cart_items = WC()->cart->get_cart();
 				$ids = [];
 				foreach ( $cart_items as $item ) {
