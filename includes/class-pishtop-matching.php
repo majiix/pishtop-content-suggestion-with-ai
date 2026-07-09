@@ -53,7 +53,9 @@ class Matching {
 		if ( $ai_count > 0 ) {
 			$transient_key = "pishtop_rec_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
 			$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $template_id, $post_type );
-			$cached_ids    = get_transient( $transient_key );
+			
+			$enable_cache  = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
+			$cached_ids    = $enable_cache ? get_transient( $transient_key ) : false;
 
 			if ( false !== $cached_ids && is_array( $cached_ids ) ) {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
@@ -85,11 +87,15 @@ class Matching {
 						delete_transient( $lock_key );
 
 						if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
-							set_transient( $transient_key, $api_ids, $cache_ttl );
+							if ( $enable_cache ) {
+								set_transient( $transient_key, $api_ids, $cache_ttl );
+							}
 							$ai_ids = array_slice( $api_ids, 0, $ai_count );
 						} else {
 							// Cache failure for 300 seconds to protect site speed
-							set_transient( $transient_key, [], 300 );
+							if ( $enable_cache ) {
+								set_transient( $transient_key, [], 300 );
+							}
 							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 						}
 					}

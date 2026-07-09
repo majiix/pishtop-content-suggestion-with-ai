@@ -113,6 +113,7 @@ Rules:
 				'delete_data_on_uninstall'      => 0,
 				'limit_candidates_same_category' => 0,
 				'enable_llm_reranking'          => 1,
+				'enable_cache'                  => 1,
 				'similarity_threshold_percent'  => 40,
 			] );
 		}
@@ -193,6 +194,7 @@ Rules:
 		$sanitized['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
 		$sanitized['limit_candidates_same_category'] = ! empty( $input['limit_candidates_same_category'] ) ? 1 : 0;
 		$sanitized['enable_llm_reranking'] = ! empty( $input['enable_llm_reranking'] ) ? 1 : 0;
+		$sanitized['enable_cache'] = ! empty( $input['enable_cache'] ) ? 1 : 0;
 		$sanitized['similarity_threshold_percent'] = isset( $input['similarity_threshold_percent'] ) ? max( 0, min( 100, intval( $input['similarity_threshold_percent'] ) ) ) : 40;
 		
 		// Prompt sanitization - preserve linebreaks but strip injection risk markup if needed. Support custom template structure.

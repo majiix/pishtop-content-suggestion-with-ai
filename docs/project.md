@@ -56,6 +56,7 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Conditional metadata placeholders: supports single or fallback placeholders like `{{meta:custom_key | {{title}} }}` evaluating recursively from outside-in
 * Embedding-only matching mode: optionally bypasses OpenRouter LLM re-ranking entirely to save cost and increase performance
 * Configurable similarity threshold: allows filtering out match candidates below a certain similarity percentage (0-100%) in the embedding-only phase
+* Configurable caching toggle: allows bypassing the transient cache to perform real-time recommendation calculations on every page load.
 
 ## Verification Commands
 * standalone similarity and syntax check:

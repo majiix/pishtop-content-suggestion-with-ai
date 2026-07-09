@@ -330,6 +330,12 @@ class Cron {
 	 * Run background ranking worker.
 	 */
 	private function run_ranking_worker( $settings ) {
+		$enable_cache = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
+		if ( ! $enable_cache ) {
+			\pishtop_log( 'INFO', 'Background ranking worker skipped: Recommendations caching is disabled.' );
+			return;
+		}
+
 		if ( Matching::has_unindexed_posts() ) {
 			\pishtop_log( 'INFO', 'Background ranking worker skipped: Database has unindexed posts.' );
 			return;

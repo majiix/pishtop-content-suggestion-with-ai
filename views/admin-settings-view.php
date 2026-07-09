@@ -162,6 +162,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 
 				<div class="form-row">
+					<label><?php esc_html_e( 'Enable Caching', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" name="pishtop_ai_settings[enable_cache]" value="1" <?php checked( $settings['enable_cache'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'If enabled, matching results are cached in transients to improve page load speed. If disabled, recommendations are generated and ranked in real-time on every page load.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
 					<label for="pishtop_default_fallback"><?php esc_html_e( 'Default Fallback', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<select id="pishtop_default_fallback" name="pishtop_ai_settings[default_fallback]">
