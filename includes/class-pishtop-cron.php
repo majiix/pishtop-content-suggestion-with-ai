@@ -89,42 +89,46 @@ class Cron {
 	 * Save post hook: schedules single-event background cron task.
 	 */
 	public function queue_post_indexing( $post_id, $post ) {
-		// Ignore autosaves, revisions, or non-post types
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return;
-		}
+		try {
+			// Ignore autosaves, revisions, or non-post types
+			if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+				return;
+			}
 
-		if ( wp_is_post_revision( $post_id ) ) {
-			return;
-		}
+			if ( wp_is_post_revision( $post_id ) ) {
+				return;
+			}
 
-		if ( ! $post instanceof \WP_Post ) {
-			$post = get_post( $post_id );
-		}
-		if ( ! $post instanceof \WP_Post ) {
-			return;
-		}
+			if ( ! $post instanceof \WP_Post ) {
+				$post = get_post( $post_id );
+			}
+			if ( ! $post instanceof \WP_Post ) {
+				return;
+			}
 
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
-		if ( ! $enable_embedding ) {
-			return;
-		}
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+			if ( ! $enable_embedding ) {
+				return;
+			}
 
-		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+			$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 
-		if ( ! in_array( $post->post_type, $allowed_types, true ) || 'publish' !== $post->post_status ) {
-			return;
-		}
+			if ( ! in_array( $post->post_type, $allowed_types, true ) || 'publish' !== $post->post_status ) {
+				return;
+			}
 
-		// Clear cached recommendations for this post since content changed
-		Matching::clear_cache( $post_id );
-		wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
+			// Clear cached recommendations for this post since content changed
+			Matching::clear_cache( $post_id );
+			wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 
-		// Schedule background worker event to generate embedding (delayed by settings value)
-		$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
-		if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
-			wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
+			// Schedule background worker event to generate embedding (delayed by settings value)
+			$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
+			if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
+				wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
+			}
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in post indexing queue: ' . $e->getMessage() );
 		}
 	}
 
@@ -139,57 +143,65 @@ class Cron {
 	 * Cron execution: generate embedding vector in background.
 	 */
 	public function background_index_post( int $post_id ) {
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
-		if ( ! $enable_embedding ) {
-			return;
+		try {
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+			if ( ! $enable_embedding ) {
+				return;
+			}
+
+			$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
+
+			$text = Matching::build_post_text( $post_id );
+			if ( empty( $text ) ) {
+				return;
+			}
+
+			// Check if embedding exists and is up to date
+			$stored = Database::get_embedding( $post_id );
+			if ( $stored && $stored['model'] === $emb_model ) {
+				return; // Already up to date
+			}
+
+			$vector = API::get_embedding( $text, $emb_model );
+			if ( is_wp_error( $vector ) ) {
+				\pishtop_log( 'ERROR', "Background indexing failed for post $post_id: " . $vector->get_error_message() );
+				return;
+			}
+
+			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
+			\pishtop_log( 'INFO', "Background indexed post $post_id successfully." );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in background index post: ' . $e->getMessage() );
 		}
-
-		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
-
-		$text = Matching::build_post_text( $post_id );
-		if ( empty( $text ) ) {
-			return;
-		}
-
-		// Check if embedding exists and is up to date
-		$stored = Database::get_embedding( $post_id );
-		if ( $stored && $stored['model'] === $emb_model ) {
-			return; // Already up to date
-		}
-
-		$vector = API::get_embedding( $text, $emb_model );
-		if ( is_wp_error( $vector ) ) {
-			\pishtop_log( 'ERROR', "Background indexing failed for post $post_id: " . $vector->get_error_message() );
-			return;
-		}
-
-		Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
-		\pishtop_log( 'INFO', "Background indexed post $post_id successfully." );
 	}
 
 	/**
 	 * Daily maintenance: Clean up diagnostic logs and reset usage.
 	 */
 	public function run_daily_maintenance() {
-		global $wpdb;
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$retention_days = isset( $settings['log_retention'] ) ? intval( $settings['log_retention'] ) : 7;
+		try {
+			global $wpdb;
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$retention_days = isset( $settings['log_retention'] ) ? intval( $settings['log_retention'] ) : 7;
 
-		// Clean up logs older than retention days
-		$table = $wpdb->prefix . 'pishtop_logs';
-		$threshold_date = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold_date ) );
-		\pishtop_log( 'INFO', sprintf( 'Daily maintenance: Deleted %d old log entries.', $deleted ) );
+			// Clean up logs older than retention days
+			$table = $wpdb->prefix . 'pishtop_logs';
+			$threshold_date = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold_date ) );
+			\pishtop_log( 'INFO', sprintf( 'Daily maintenance: Deleted %d old log entries.', $deleted ) );
 
-		// Reset daily usage counters
-		$today = wp_date( 'Y-m-d' );
-		update_option( 'pishtop_ai_quota_usage', [
-			'date'      => $today,
-			'embedding' => 0,
-			'ranking'   => 0,
-		] );
+			// Reset daily usage counters
+			$today = wp_date( 'Y-m-d' );
+			update_option( 'pishtop_ai_quota_usage', [
+				'date'      => $today,
+				'embedding' => 0,
+				'ranking'   => 0,
+			] );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in daily maintenance: ' . $e->getMessage() );
+		}
 	}
 
 	/**
@@ -253,6 +265,8 @@ class Cron {
 			if ( $enable_ranking ) {
 				$this->run_ranking_worker( $settings );
 			}
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in cron worker: ' . $e->getMessage() );
 		} finally {
 			self::$is_running_worker = false;
 		}

@@ -293,182 +293,217 @@ Rules:
 
 	// AJAX endpoints
 	public function ajax_clear_cache() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		global $wpdb;
-		// Delete all recommendation transients
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pishtop_rec_%'" );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pishtop_rec_%'" );
+			global $wpdb;
+			// Delete all recommendation transients
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pishtop_rec_%'" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pishtop_rec_%'" );
 
-		\pishtop_log( 'INFO', 'Recommendation cache cleared manually.' );
-		wp_send_json_success( __( 'Recommendation caches cleared.', 'pishtop-content-suggestion-with-ai' ) );
+			\pishtop_log( 'INFO', 'Recommendation cache cleared manually.' );
+			wp_send_json_success( __( 'Recommendation caches cleared.', 'pishtop-content-suggestion-with-ai' ) );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in clear cache: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to clear cache.', 'pishtop-content-suggestion-with-ai' ) );
+		}
 	}
 
 	public function ajax_clear_embeddings() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}pishtop_post_embeddings" );
+
+			// Clear counts cache
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+			wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
+
+			\pishtop_log( 'INFO', 'Embeddings cache cleared manually. Full regeneration required.' );
+			wp_send_json_success( __( 'Embeddings database cleared.', 'pishtop-content-suggestion-with-ai' ) );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in clear embeddings: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to clear embeddings database.', 'pishtop-content-suggestion-with-ai' ) );
 		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}pishtop_post_embeddings" );
-
-		// Clear counts cache
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
-		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
-
-		\pishtop_log( 'INFO', 'Embeddings cache cleared manually. Full regeneration required.' );
-		wp_send_json_success( __( 'Embeddings database cleared.', 'pishtop-content-suggestion-with-ai' ) );
 	}
 
 	public function ajax_clear_logs() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		Database::clear_all_logs();
-		wp_send_json_success( __( 'Diagnostics logs cleared.', 'pishtop-content-suggestion-with-ai' ) );
+			Database::clear_all_logs();
+			wp_send_json_success( __( 'Diagnostics logs cleared.', 'pishtop-content-suggestion-with-ai' ) );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in clear logs: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to clear logs.', 'pishtop-content-suggestion-with-ai' ) );
+		}
 	}
 
 	public function ajax_get_logs() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		$page   = isset( $_GET['log_page'] ) ? max( 1, intval( $_GET['log_page'] ) ) : 1;
-		$level  = isset( $_GET['log_level'] ) ? sanitize_text_field( wp_unslash( $_GET['log_level'] ) ) : '';
-		$search = isset( $_GET['log_search'] ) ? sanitize_text_field( wp_unslash( $_GET['log_search'] ) ) : '';
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$limit  = isset( $settings['log_page_size'] ) ? max( 5, intval( $settings['log_page_size'] ) ) : 20;
-		$offset = ( $page - 1 ) * $limit;
+			$page   = isset( $_GET['log_page'] ) ? max( 1, intval( $_GET['log_page'] ) ) : 1;
+			$level  = isset( $_GET['log_level'] ) ? sanitize_text_field( wp_unslash( $_GET['log_level'] ) ) : '';
+			$search = isset( $_GET['log_search'] ) ? sanitize_text_field( wp_unslash( $_GET['log_search'] ) ) : '';
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$limit  = isset( $settings['log_page_size'] ) ? max( 5, intval( $settings['log_page_size'] ) ) : 20;
+			$offset = ( $page - 1 ) * $limit;
 
-		$logs = Database::get_logs( $limit, $offset, $level, $search );
-		$total_logs = Database::get_logs_count( $level, $search );
-		$total_pages = ceil( $total_logs / $limit );
+			$logs = Database::get_logs( $limit, $offset, $level, $search );
+			$total_logs = Database::get_logs_count( $level, $search );
+			$total_pages = ceil( $total_logs / $limit );
 
-		$html = '';
-		if ( empty( $logs ) ) {
-			$html = '<tr><td colspan="4" style="text-align:center;">' . esc_html__( 'No logs found.', 'pishtop-content-suggestion-with-ai' ) . '</td></tr>';
-		} else {
-			foreach ( $logs as $log ) {
-				$context_link = '';
-				if ( ! empty( $log->context ) ) {
-					$context_link = sprintf(
-						'<a href="#" class="view-context" data-context="%s">%s</a>',
-						esc_attr( $log->context ),
-						esc_html__( 'View Context', 'pishtop-content-suggestion-with-ai' )
+			$html = '';
+			if ( empty( $logs ) ) {
+				$html = '<tr><td colspan="4" style="text-align:center;">' . esc_html__( 'No logs found.', 'pishtop-content-suggestion-with-ai' ) . '</td></tr>';
+			} else {
+				foreach ( $logs as $log ) {
+					$context_link = '';
+					if ( ! empty( $log->context ) ) {
+						$context_link = sprintf(
+							'<a href="#" class="view-context" data-context="%s">%s</a>',
+							esc_attr( $log->context ),
+							esc_html__( 'View Context', 'pishtop-content-suggestion-with-ai' )
+						);
+					}
+
+					$level_class = 'log-level-' . strtolower( $log->level );
+					$html .= sprintf(
+						'<tr>
+							<td><code>%s</code></td>
+							<td><span class="log-level-badge %s">%s</span></td>
+							<td>%s</td>
+							<td>%s</td>
+						</tr>',
+						esc_html( $log->created_at ),
+						esc_attr( $level_class ),
+						esc_html( $log->level ),
+						esc_html( $log->message ),
+						$context_link
 					);
 				}
-
-				$level_class = 'log-level-' . strtolower( $log->level );
-				$html .= sprintf(
-					'<tr>
-						<td><code>%s</code></td>
-						<td><span class="log-level-badge %s">%s</span></td>
-						<td>%s</td>
-						<td>%s</td>
-					</tr>',
-					esc_html( $log->created_at ),
-					esc_attr( $level_class ),
-					esc_html( $log->level ),
-					esc_html( $log->message ),
-					$context_link
-				);
 			}
-		}
 
-		wp_send_json_success( [
-			'html'       => $html,
-			'page'       => $page,
-			'totalPages' => $total_pages,
-		] );
+			wp_send_json_success( [
+				'html'       => $html,
+				'page'       => $page,
+				'totalPages' => $total_pages,
+			] );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in get logs: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to retrieve logs.', 'pishtop-content-suggestion-with-ai' ) );
+		}
 	}
 
 	public function ajax_load_models() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		$embeddings = API::get_openrouter_embedding_models();
-		$rankings   = API::get_openrouter_ranking_models();
+			$embeddings = API::get_openrouter_embedding_models();
+			$rankings   = API::get_openrouter_ranking_models();
 
-		wp_send_json_success( [
-			'embeddings' => $embeddings,
-			'rankings'   => $rankings,
-		] );
+			wp_send_json_success( [
+				'embeddings' => $embeddings,
+				'rankings'   => $rankings,
+			] );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in load models: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to load models.', 'pishtop-content-suggestion-with-ai' ) );
+		}
 	}
 
 	public function ajax_save_settings() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$settings = isset( $_POST['pishtop_ai_settings'] ) ? wp_unslash( $_POST['pishtop_ai_settings'] ) : [];
-		if ( ! is_array( $settings ) ) {
-			$settings = [];
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$settings = isset( $_POST['pishtop_ai_settings'] ) ? wp_unslash( $_POST['pishtop_ai_settings'] ) : [];
+			if ( ! is_array( $settings ) ) {
+				$settings = [];
+			}
+			$sanitized = $this->sanitize_settings( $settings );
+			
+			update_option( 'pishtop_ai_settings', $sanitized );
+			
+			wp_send_json_success( __( 'Settings saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in save settings: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to save settings.', 'pishtop-content-suggestion-with-ai' ) );
 		}
-		$sanitized = $this->sanitize_settings( $settings );
-		
-		update_option( 'pishtop_ai_settings', $sanitized );
-		
-		wp_send_json_success( __( 'Settings saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
 	}
 
 	public function ajax_save_templates() {
-		if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$templates_post = isset( $_POST['templates'] ) ? wp_unslash( $_POST['templates'] ) : [];
-		if ( empty( $templates_post ) || ! is_array( $templates_post ) ) {
-			wp_send_json_error( __( 'No templates data received.', 'pishtop-content-suggestion-with-ai' ) );
-		}
-
-		$updated_templates = [];
-		foreach ( $templates_post as $tpl ) {
-			if ( empty( $tpl['id'] ) ) {
-				continue;
+		try {
+			if ( ! check_ajax_referer( 'pishtop_admin_action', 'nonce', false ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 			}
-			$id = sanitize_key( $tpl['id'] );
-			$updated_templates[ $id ] = [
-				'id'           => $id,
-				'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
-				'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
-				'custom_css'   => wp_strip_all_tags( $tpl['custom_css'] ?? '' ),
-				'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
-			];
-		}
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
+			}
 
-		update_option( 'pishtop_ai_templates', $updated_templates );
-		wp_send_json_success( __( 'Templates saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$templates_post = isset( $_POST['templates'] ) ? wp_unslash( $_POST['templates'] ) : [];
+			if ( empty( $templates_post ) || ! is_array( $templates_post ) ) {
+				wp_send_json_error( __( 'No templates data received.', 'pishtop-content-suggestion-with-ai' ) );
+			}
+
+			$updated_templates = [];
+			foreach ( $templates_post as $tpl ) {
+				if ( empty( $tpl['id'] ) ) {
+					continue;
+				}
+				$id = sanitize_key( $tpl['id'] );
+				$updated_templates[ $id ] = [
+					'id'           => $id,
+					'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
+					'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
+					'custom_css'   => wp_strip_all_tags( $tpl['custom_css'] ?? '' ),
+					'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
+				];
+			}
+
+			update_option( 'pishtop_ai_templates', $updated_templates );
+			wp_send_json_success( __( 'Templates saved successfully.', 'pishtop-content-suggestion-with-ai' ) );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in save templates: ' . $e->getMessage() );
+			wp_send_json_error( __( 'Failed to save templates.', 'pishtop-content-suggestion-with-ai' ) );
+		}
 	}
 
 	/**

@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,9 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.0.9 =
+* Wrap all key AJAX endpoints, shortcode rendering, and background cron callbacks in defensive try-catch blocks to prevent HTTP 500 server errors.
 
 = 1.0.8 =
 * Guard WooCommerce cart access to prevent PHP fatal errors when WooCommerce cart is uninitialized.

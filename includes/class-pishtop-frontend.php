@@ -69,119 +69,129 @@ class Frontend {
 	 * Render the suggestions shortcode instantly with loading skeleton.
 	 */
 	public function render_suggestions_shortcode( $atts ) {
-		// Enqueue assets dynamically when shortcode is active
-		wp_enqueue_style( 'pishtop-frontend-css' );
-		wp_enqueue_script( 'pishtop-frontend-js' );
+		try {
+			// Enqueue assets dynamically when shortcode is active
+			wp_enqueue_style( 'pishtop-frontend-css' );
+			wp_enqueue_script( 'pishtop-frontend-js' );
 
-		// Inject custom CSS from all registered templates
-		$templates = get_option( 'pishtop_ai_templates', [] );
-		$combined_css = '';
-		foreach ( $templates as $tpl ) {
-			if ( ! empty( $tpl['custom_css'] ) ) {
-				$combined_css .= "\n" . $tpl['custom_css'];
+			// Inject custom CSS from all registered templates
+			$templates = get_option( 'pishtop_ai_templates', [] );
+			$combined_css = '';
+			foreach ( $templates as $tpl ) {
+				if ( ! empty( $tpl['custom_css'] ) ) {
+					$combined_css .= "\n" . $tpl['custom_css'];
+				}
 			}
-		}
 
-		if ( ! empty( $combined_css ) ) {
-			wp_add_inline_style( 'pishtop-frontend-css', $combined_css );
-		}
+			if ( ! empty( $combined_css ) ) {
+				wp_add_inline_style( 'pishtop-frontend-css', $combined_css );
+			}
 
-		$settings = get_option( 'pishtop_ai_settings', [] );
-		$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 
-		$a = shortcode_atts( [
-			'post_id'  => 0,
-			'count'    => $default_count,
-			'limit'    => 0,
-			'template' => 'default_list',
-		], $atts );
+			$a = shortcode_atts( [
+				'post_id'  => 0,
+				'count'    => $default_count,
+				'limit'    => 0,
+				'template' => 'default_list',
+			], $atts );
 
-		$post_id = intval( $a['post_id'] );
-		if ( $post_id <= 0 ) {
-			$post_id = get_the_ID();
-		}
+			$post_id = intval( $a['post_id'] );
+			if ( $post_id <= 0 ) {
+				$post_id = get_the_ID();
+			}
 
-		if ( ! $post_id ) {
+			if ( ! $post_id ) {
+				return '';
+			}
+
+			$limit = $a['limit'] > 0 ? intval( $a['limit'] ) : intval( $a['count'] );
+			$limit = max( 1, $limit );
+			$template = sanitize_key( $a['template'] );
+
+			// Retrieve post type filter configured inside the template
+			$templates = get_option( 'pishtop_ai_templates', [] );
+			$post_type = '';
+			if ( isset( $templates[ $template ]['post_type'] ) ) {
+				$post_type = sanitize_key( $templates[ $template ]['post_type'] );
+			}
+
+			ob_start();
+			?>
+			<div class="pishtop-suggestions-container" data-post-id="<?php echo esc_attr( $post_id ); ?>" data-limit="<?php echo esc_attr( $limit ); ?>" data-template="<?php echo esc_attr( $template ); ?>" data-post-type="<?php echo esc_attr( $post_type ); ?>">
+				<!-- Responsive Skeleton Loading Shimmer Preset -->
+				<div class="pishtop-skeleton-wrapper">
+					<div class="pishtop-skeleton-line shimmer"></div>
+					<div class="pishtop-skeleton-line shimmer"></div>
+					<div class="pishtop-skeleton-line shimmer"></div>
+				</div>
+			</div>
+			<?php
+			return ob_get_clean();
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in shortcode rendering: ' . $e->getMessage() );
 			return '';
 		}
-
-		$limit = $a['limit'] > 0 ? intval( $a['limit'] ) : intval( $a['count'] );
-		$limit = max( 1, $limit );
-		$template = sanitize_key( $a['template'] );
-
-		// Retrieve post type filter configured inside the template
-		$templates = get_option( 'pishtop_ai_templates', [] );
-		$post_type = '';
-		if ( isset( $templates[ $template ]['post_type'] ) ) {
-			$post_type = sanitize_key( $templates[ $template ]['post_type'] );
-		}
-
-		ob_start();
-		?>
-		<div class="pishtop-suggestions-container" data-post-id="<?php echo esc_attr( $post_id ); ?>" data-limit="<?php echo esc_attr( $limit ); ?>" data-template="<?php echo esc_attr( $template ); ?>" data-post-type="<?php echo esc_attr( $post_type ); ?>">
-			<!-- Responsive Skeleton Loading Shimmer Preset -->
-			<div class="pishtop-skeleton-wrapper">
-				<div class="pishtop-skeleton-line shimmer"></div>
-				<div class="pishtop-skeleton-line shimmer"></div>
-				<div class="pishtop-skeleton-line shimmer"></div>
-			</div>
-		</div>
-		<?php
-		return ob_get_clean();
 	}
 
 	/**
 	 * AJAX endpoint to retrieve recommendations dynamically.
 	 */
 	public function ajax_get_suggestions() {
-		check_ajax_referer( 'pishtop_frontend_action', 'nonce' );
+		try {
+			check_ajax_referer( 'pishtop_frontend_action', 'nonce' );
 
-		$post_id     = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
-		$limit       = isset( $_POST['limit'] ) ? max( 1, intval( $_POST['limit'] ) ) : 5;
-		$template_id = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : 'default_list';
-		$post_type   = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
+			$post_id     = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+			$limit       = isset( $_POST['limit'] ) ? max( 1, intval( $_POST['limit'] ) ) : 5;
+			$template_id = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : 'default_list';
+			$post_type   = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 
-		if ( ! $post_id ) {
-			wp_send_json_error( 'Missing post ID' );
-		}
-
-		$post = get_post( $post_id );
-		if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
-			wp_send_json_error( 'Unauthorized post query' );
-		}
-
-		// Fetch recommendations
-		$rec_ids = Matching::get_recommendations( $post_id, $limit, $template_id, $post_type );
-		if ( empty( $rec_ids ) ) {
-			wp_send_json_success( '' );
-		}
-
-		// Get template markup
-		$templates = get_option( 'pishtop_ai_templates', [] );
-		$tpl = isset( $templates[ $template_id ] ) ? $templates[ $template_id ] : null;
-
-		if ( ! $tpl ) {
-			$tpl = [
-				'wrapper_html' => '<ul class="pishtop-suggestions-list">{{items}}</ul>',
-				'item_html'    => '<li><a href="{{permalink}}">{{title}}</a></li>',
-			];
-		}
-
-		$item_markup_list = [];
-		foreach ( $rec_ids as $rec_id ) {
-			$rec_post = get_post( $rec_id );
-			if ( ! $rec_post || 'publish' !== $rec_post->post_status ) {
-				continue;
+			if ( ! $post_id ) {
+				wp_send_json_error( 'Missing post ID' );
 			}
-			$item_markup_list[] = $this->parse_placeholders( $tpl['item_html'], $rec_id, $rec_post );
-		}
 
-		if ( empty( $item_markup_list ) ) {
-			wp_send_json_success( '' );
-		}
+			$post = get_post( $post_id );
+			if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
+				wp_send_json_error( 'Unauthorized post query' );
+			}
 
-		$output_html = str_replace( '{{items}}', implode( "\n", $item_markup_list ), $tpl['wrapper_html'] );
-		wp_send_json_success( $output_html );
+			// Fetch recommendations
+			$rec_ids = Matching::get_recommendations( $post_id, $limit, $template_id, $post_type );
+			if ( empty( $rec_ids ) ) {
+				wp_send_json_success( '' );
+			}
+
+			// Get template markup
+			$templates = get_option( 'pishtop_ai_templates', [] );
+			$tpl = isset( $templates[ $template_id ] ) ? $templates[ $template_id ] : null;
+
+			if ( ! $tpl ) {
+				$tpl = [
+					'wrapper_html' => '<ul class="pishtop-suggestions-list">{{items}}</ul>',
+					'item_html'    => '<li><a href="{{permalink}}">{{title}}</a></li>',
+				];
+			}
+
+			$item_markup_list = [];
+			foreach ( $rec_ids as $rec_id ) {
+				$rec_post = get_post( $rec_id );
+				if ( ! $rec_post || 'publish' !== $rec_post->post_status ) {
+					continue;
+				}
+				$item_markup_list[] = $this->parse_placeholders( $tpl['item_html'], $rec_id, $rec_post );
+			}
+
+			if ( empty( $item_markup_list ) ) {
+				wp_send_json_success( '' );
+			}
+
+			$output_html = str_replace( '{{items}}', implode( "\n", $item_markup_list ), $tpl['wrapper_html'] );
+			wp_send_json_success( $output_html );
+		} catch ( \Throwable $e ) {
+			\pishtop_log( 'ERROR', 'Exception in AJAX suggestion retrieval: ' . $e->getMessage() );
+			wp_send_json_error( 'Server error' );
+		}
 	}
 
 	/**
