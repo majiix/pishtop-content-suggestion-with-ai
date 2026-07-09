@@ -1100,7 +1100,7 @@ p.description {
 /* Toast Notifications Container */
 #pishtop-toast-container {
 	position: fixed;
-	top: 32px;
+	bottom: 32px;
 	right: 32px;
 	z-index: 999999;
 	display: flex;
@@ -1149,28 +1149,79 @@ p.description {
 	flex-shrink: 0;
 }
 
+.pishtop-toast.toast-success {
+	background: #f0fdf4;
+	border: 1px solid rgba(5, 150, 105, 0.15);
+	border-left: 4px solid var(--success);
+}
+.pishtop-toast.toast-success .toast-message {
+	color: #064e3b;
+}
 .pishtop-toast.toast-success .toast-icon {
 	color: var(--success);
 }
-
-.pishtop-toast.toast-error .toast-icon {
-	color: var(--danger);
+.pishtop-toast.toast-success .toast-close {
+	color: #047857;
 }
-
-.pishtop-toast.toast-warning .toast-icon {
-	color: var(--warning);
+.pishtop-toast.toast-success .toast-close:hover {
+	color: #064e3b;
+	background: rgba(5, 150, 105, 0.08);
 }
-
-.pishtop-toast.toast-success {
-	border-left: 4px solid var(--success);
+.pishtop-toast.toast-success .toast-progress {
+	background: rgba(5, 150, 105, 0.06);
+}
+.pishtop-toast.toast-success .toast-progress::after {
+	background: var(--success);
 }
 
 .pishtop-toast.toast-error {
+	background: #fef2f2;
+	border: 1px solid rgba(220, 38, 38, 0.15);
 	border-left: 4px solid var(--danger);
+}
+.pishtop-toast.toast-error .toast-message {
+	color: #7f1d1d;
+}
+.pishtop-toast.toast-error .toast-icon {
+	color: var(--danger);
+}
+.pishtop-toast.toast-error .toast-close {
+	color: #b91c1c;
+}
+.pishtop-toast.toast-error .toast-close:hover {
+	color: #7f1d1d;
+	background: rgba(220, 38, 38, 0.08);
+}
+.pishtop-toast.toast-error .toast-progress {
+	background: rgba(220, 38, 38, 0.06);
+}
+.pishtop-toast.toast-error .toast-progress::after {
+	background: var(--danger);
 }
 
 .pishtop-toast.toast-warning {
+	background: #fffbeb;
+	border: 1px solid rgba(217, 119, 6, 0.15);
 	border-left: 4px solid var(--warning);
+}
+.pishtop-toast.toast-warning .toast-message {
+	color: #78350f;
+}
+.pishtop-toast.toast-warning .toast-icon {
+	color: var(--warning);
+}
+.pishtop-toast.toast-warning .toast-close {
+	color: #b45309;
+}
+.pishtop-toast.toast-warning .toast-close:hover {
+	color: #78350f;
+	background: rgba(217, 119, 6, 0.08);
+}
+.pishtop-toast.toast-warning .toast-progress {
+	background: rgba(217, 119, 6, 0.06);
+}
+.pishtop-toast.toast-warning .toast-progress::after {
+	background: var(--warning);
 }
 
 .toast-message {
@@ -1225,17 +1276,7 @@ p.description {
 	animation: toast-countdown 4s linear forwards;
 }
 
-.pishtop-toast.toast-success .toast-progress::after {
-	background: var(--success);
-}
-
-.pishtop-toast.toast-error .toast-progress::after {
-	background: var(--danger);
-}
-
-.pishtop-toast.toast-warning .toast-progress::after {
-	background: var(--warning);
-}
+/* Status countdowns defined inline above */
 
 @keyframes toast-countdown {
 	from {

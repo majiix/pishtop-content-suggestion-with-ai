@@ -271,6 +271,61 @@ jQuery(document).ready(function($) {
 	$('#pishtop-templates-form').on('submit', function(e) {
 		e.preventDefault();
 		var form = $(this);
+		
+		var isValid = true;
+		$('#pishtop-templates-repeater .template-item-card').each(function() {
+			var card = $(this);
+			var idInput = card.find('.template-id-input');
+			var templateId = idInput.val() ? idInput.val().trim() : '';
+			
+			var wrapperTextarea = card.find('textarea[name*="[wrapper_html]"]');
+			var itemTextarea = card.find('textarea[name*="[item_html]"]');
+			
+			var wrapperVal = wrapperTextarea.val() ? wrapperTextarea.val().trim() : '';
+			var itemVal = itemTextarea.val() ? itemTextarea.val().trim() : '';
+			
+			if (!templateId) {
+				showNotification('Template ID / Handle is required.', 'error');
+				idInput.focus();
+				isValid = false;
+				return false;
+			}
+			
+			if (!wrapperVal) {
+				showNotification('Wrapper HTML is required for template "' + templateId + '".', 'error');
+				if (card.hasClass('collapsed')) {
+					card.find('.pishtop-btn-toggle-collapse').trigger('click');
+				}
+				wrapperTextarea.focus();
+				isValid = false;
+				return false;
+			}
+			
+			if (wrapperVal.indexOf('{{items}}') === -1) {
+				showNotification('Wrapper HTML for template "' + templateId + '" must contain {{items}}.', 'error');
+				if (card.hasClass('collapsed')) {
+					card.find('.pishtop-btn-toggle-collapse').trigger('click');
+				}
+				wrapperTextarea.focus();
+				isValid = false;
+				return false;
+			}
+			
+			if (!itemVal) {
+				showNotification('Item HTML is required for template "' + templateId + '".', 'error');
+				if (card.hasClass('collapsed')) {
+					card.find('.pishtop-btn-toggle-collapse').trigger('click');
+				}
+				itemTextarea.focus();
+				isValid = false;
+				return false;
+			}
+		});
+		
+		if (!isValid) {
+			return;
+		}
+
 		var btn = form.find('.pishtop-save-btn');
 		btn.addClass('disabled').prop('disabled', true);
 		

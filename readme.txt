@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.6
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,12 +28,6 @@ To achieve maximum precision, the plugin performs local similarity pre-filtering
 * **User-Isolated Caching Keys:** Cache transients on WooCommerce pages vary dynamically using secure cart item hashes and order IDs, preventing cross-user caching leakage.
 * **Developer Extensibility Filters:** Hook into `pishtop_ai_post_text` to modify source text dynamically, and `pishtop_ai_recommendations_transient_key` to route custom transient cache partitions.
 * **Viewport Lazy Loading:** Trigger frontend AJAX suggestion loading via Intersection Observer, saving bandwidth and reducing API costs by querying only when the recommendations block becomes visible.
-* **Diagnostics Log Console:** Capped diagnostic log tables record API calls, errors, and system activity directly inside the admin panel. Features keyword search, level filtering, and a JSON payload viewer modal.
-* **Staged Cron Workers:** Background cron tasks automatically index posts and pre-cache recommendations. Fallback recommendations are staged until the initial database indexing is fully complete.
-* **Overdue Cron Inline Safety Runner:** Executes background indexing inline if the WP scheduled cron worker is overdue.
-* **Dashboard Analytics Card:** View the count of posts with active recommendation caches in a dedicated stat card.
-* **Multiple Output Sorting Modes:** Choose between Similarity, Random, Date Descending, Date Ascending, and Title Ascending.
-* **Custom Prompts & Reset:** Custom prompt template editor with an instant default reset button.
 
 == Installation ==
 
@@ -108,6 +102,18 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.0.6 =
+* Add template fields validation: enforces non-empty Wrapper HTML and Item HTML, and verifies Wrapper HTML contains {{items}} prior to submission.
+* Add conditional metadata placeholders: supports single or fallback placeholders like {{meta:custom_key | {{title}} }} evaluating recursively from outside-in.
+
+= 1.0.5 =
+* Remove Native Category/Tag matching from default fallback options.
+* Update Recent posts fallback to target the template's Target Post Type Filter.
+
+= 1.0.4 =
+* Move background ranking fallback checks to the cache miss stage to ensure pre-cached suggestions are correctly served from transients when background worker is active.
+* Implement robust multi-stage fallback queries: if the category matching fallback returns fewer posts than requested, the plugin automatically fills up the remaining spots using recent posts of the same post type.
 
 = 1.0.3 =
 * Bypass transient cache lookups entirely during active background indexing or ranking runs to always serve fresh native fallback posts.

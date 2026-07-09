@@ -33,7 +33,7 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * In-app Help & Documentation center covering features and configurations
 * High-fidelity, slate-light professional dashboard theme with custom toggles, circular SVG charts, and shadow lifts
 * Collapsible template repeater layouts with instant shortcode copy buttons
-* Asynchronous AJAX form saves with top-right floating toast notifications
+* Asynchronous AJAX form saves with bottom-right floating toast notifications styled dynamically with high-visibility status-based pastel background colors, matching borders, text, and close controls
 * Configurable post types selection for indexing and recommendations
 * Expose transient mutex lock TTL duration, database log row capacities, API request timeouts, LLM re-ranking temperatures, and log page sizes as editable admin settings
 * Expose HTTP header request title details, background queue indexing delays, log capacity cleanup ratios, maintenance cron schedules, fallback image URL paths, and post thumbnail sizes as custom admin settings
@@ -50,6 +50,10 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Hybrid AI + Fallback recommendation engine filling count requests exceeding configured Max AI count settings with native fallback items, ensuring AI items stay on top with independent sorting
 * WooCommerce out-of-stock catalog visibility exclusion filtering dynamically in SQL candidates and fallback queries
 * Active Recommendations dashboard stats card displaying the count of posts with cached transient recommendations
+* Robust native fallback matching using recent posts of the configured Target Post Type Filter
+* Cache-miss background ranking checks ensuring pre-cached recommendations are served directly from transients even under active cron workers
+* Mandatory templates validation in JavaScript: enforces non-empty Wrapper HTML and Item HTML, and verifies Wrapper HTML contains `{{items}}` prior to form submission
+* Conditional metadata placeholders: supports single or fallback placeholders like `{{meta:custom_key | {{title}} }}` evaluating recursively from outside-in
 
 ## Verification Commands
 * standalone similarity and syntax check:

@@ -48,7 +48,7 @@ class Cron {
 	/**
 	 * Setup scheduled tasks.
 	 */
-	public function schedule_cron_events( $settings = null ) {
+	public function schedule_cron_events( $settings = null, bool $force_reschedule = false ) {
 		if ( null === $settings ) {
 			$settings = get_option( 'pishtop_ai_settings', [] );
 		}
@@ -77,7 +77,7 @@ class Cron {
 			$schedules = wp_get_schedules();
 			$scheduled_interval = $schedules['pishtop_custom_interval']['interval'] ?? 0;
 
-			if ( ! $current_worker_schedule || $scheduled_interval !== ( $saved_minutes * MINUTE_IN_SECONDS ) ) {
+			if ( $force_reschedule || ! $current_worker_schedule || $scheduled_interval !== ( $saved_minutes * MINUTE_IN_SECONDS ) ) {
 				wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
 				wp_schedule_event( time() + 30, 'pishtop_custom_interval', 'pishtop_ai_cron_worker_event' );
 			}
@@ -183,7 +183,10 @@ class Cron {
 	 */
 	public function schedule_cron_events_on_updated_option( $option, $old_value, $value ) {
 		if ( 'pishtop_ai_settings' === $option ) {
-			$this->schedule_cron_events( $value );
+			$old_minutes = isset( $old_value['cron_interval_minutes'] ) ? intval( $old_value['cron_interval_minutes'] ) : 15;
+			$new_minutes = isset( $value['cron_interval_minutes'] ) ? intval( $value['cron_interval_minutes'] ) : 15;
+			$force_reschedule = ( $old_minutes !== $new_minutes );
+			$this->schedule_cron_events( $value, $force_reschedule );
 		}
 	}
 

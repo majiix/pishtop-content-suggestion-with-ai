@@ -75,7 +75,7 @@ class Admin {
 				'api_key'                       => '',
 				'cache_ttl'                     => 12,
 				'cache_ttl_unit'                => 'hours',
-				'default_fallback'              => 'category',
+				'default_fallback'              => 'recent',
 				'embedding_model'               => 'openai/text-embedding-3-small',
 				'embedding_fields'              => [ 'title', 'excerpt' ],
 				'ranking_fields'                => [ 'title', 'excerpt' ],
@@ -134,7 +134,7 @@ Rules:
 		$sanitized['api_key'] = isset( $input['api_key'] ) ? sanitize_text_field( $input['api_key'] ) : '';
 		$sanitized['cache_ttl'] = isset( $input['cache_ttl'] ) ? max( 1, intval( $input['cache_ttl'] ) ) : 12;
 		$sanitized['cache_ttl_unit'] = isset( $input['cache_ttl_unit'] ) ? sanitize_key( $input['cache_ttl_unit'] ) : 'hours';
-		$sanitized['default_fallback'] = isset( $input['default_fallback'] ) ? sanitize_text_field( $input['default_fallback'] ) : 'category';
+		$sanitized['default_fallback'] = isset( $input['default_fallback'] ) ? sanitize_text_field( $input['default_fallback'] ) : 'recent';
 		$sanitized['final_output_sort'] = isset( $input['final_output_sort'] ) ? sanitize_key( $input['final_output_sort'] ) : 'similarity';
 		$sanitized['embedding_model'] = isset( $input['embedding_model'] ) ? sanitize_text_field( $input['embedding_model'] ) : 'openai/text-embedding-3-small';
 		

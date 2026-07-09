@@ -48,16 +48,6 @@ class Matching {
 
 		$ai_count = min( $count, $max_ai_count );
 
-		// Check if background indexing or ranking is active/enabled (and not in cron worker context)
-		$is_cron_ranking = ! empty( $settings['enable_cron_ranking'] ) && ! Cron::$is_running_worker;
-
-		if ( self::has_unindexed_posts() || $is_cron_ranking ) {
-			$reason = self::has_unindexed_posts() ? 'Indexing' : 'Background ranking';
-			\pishtop_log( 'INFO', "{$reason} in progress. Returning native fallback directly for post {$post_id}." );
-			$fallback_ids = self::get_native_fallback( $post_id, $count, $post_type );
-			return self::apply_final_sorting( $fallback_ids );
-		}
-
 		// 2. Fetch AI suggestions (either from cache or by querying API)
 		$ai_ids = [];
 		if ( $ai_count > 0 ) {
@@ -69,31 +59,39 @@ class Matching {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
 			} else {
 				// Cache miss.
-				// Mutex Cache Stampede Protection
-				$lock_key = "pishtop_lock_{$post_id}";
-				$is_locked = get_transient( $lock_key );
+				$is_cron_ranking = ! empty( $settings['enable_cron_ranking'] ) && ! Cron::$is_running_worker;
 
-				if ( $is_locked ) {
-					\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
+				if ( self::has_unindexed_posts() || $is_cron_ranking ) {
+					$reason = self::has_unindexed_posts() ? 'Indexing' : 'Background ranking';
+					\pishtop_log( 'INFO', "{$reason} in progress. Returning native fallback directly for post {$post_id}." );
 					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 				} else {
-					// Acquire Lock
-					$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
-					set_transient( $lock_key, true, $lock_ttl );
+					// Mutex Cache Stampede Protection
+					$lock_key = "pishtop_lock_{$post_id}";
+					$is_locked = get_transient( $lock_key );
 
-					// Fetch $max_ai_count posts from AI
-					$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
-
-					// Release Lock
-					delete_transient( $lock_key );
-
-					if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
-						set_transient( $transient_key, $api_ids, $cache_ttl );
-						$ai_ids = array_slice( $api_ids, 0, $ai_count );
-					} else {
-						// Cache failure for 300 seconds to protect site speed
-						set_transient( $transient_key, [], 300 );
+					if ( $is_locked ) {
+						\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
 						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+					} else {
+						// Acquire Lock
+						$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
+						set_transient( $lock_key, true, $lock_ttl );
+
+						// Fetch $max_ai_count posts from AI
+						$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
+
+						// Release Lock
+						delete_transient( $lock_key );
+
+						if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
+							set_transient( $transient_key, $api_ids, $cache_ttl );
+							$ai_ids = array_slice( $api_ids, 0, $ai_count );
+						} else {
+							// Cache failure for 300 seconds to protect site speed
+							set_transient( $transient_key, [], 300 );
+							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+						}
 					}
 				}
 			}
@@ -296,7 +294,7 @@ class Matching {
 		}
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
-		$fallback_behavior = $settings['default_fallback'] ?? 'category';
+		$fallback_behavior = $settings['default_fallback'] ?? 'recent';
 
 		if ( 'hide' === $fallback_behavior ) {
 			return [];
@@ -304,11 +302,12 @@ class Matching {
 
 		$post_type = ! empty( $post_type ) ? sanitize_key( $post_type ) : $post->post_type;
 
+		$exclude = array_unique( array_merge( [ $post_id ], $exclude_ids ) );
 		$args = [
 			'post_type'      => $post_type,
 			'posts_per_page' => $count,
 			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
-			'post__not_in'   => array_merge( [ $post_id ], $exclude_ids ),
+			'post__not_in'   => $exclude,
 			'fields'         => 'ids',
 			'post_status'    => 'publish',
 		];
@@ -330,37 +329,11 @@ class Matching {
 		if ( ! empty( $lang ) ) {
 			if ( function_exists( 'pll_get_post_language' ) ) {
 				$args['lang'] = $lang;
-			} elseif ( class_exists( 'SitePress' ) ) {
-				// WPML will automatically filter queries based on language if SitePress is active
-			}
-		}
-
-		if ( 'category' === $fallback_behavior ) {
-			$taxonomies = get_object_taxonomies( $post_type );
-			$tax_query = [];
-			foreach ( $taxonomies as $taxonomy ) {
-				$terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'ids' ] );
-				if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
-					$tax_query[] = [
-						'taxonomy' => $taxonomy,
-						'field'    => 'term_id',
-						'terms'    => $terms,
-					];
-				}
-			}
-			if ( ! empty( $tax_query ) ) {
-				if ( count( $tax_query ) > 1 ) {
-					$tax_query['relation'] = 'OR';
-				}
-				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				$args['tax_query'] = $tax_query;
 			}
 		}
 
 		$query = new \WP_Query( $args );
-		$ids = $query->posts;
-
-		return $ids;
+		return ! empty( $query->posts ) ? $query->posts : [];
 	}
 
 	/**

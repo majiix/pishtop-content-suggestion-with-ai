@@ -188,6 +188,9 @@ class Frontend {
 	 * Parse template placeholder variables.
 	 */
 	private function parse_placeholders( string $html, int $id, \WP_Post $post ) {
+		// Handle general metadata first to allow fallback to other placeholders: {{meta:key_name}} or {{meta:key_name | fallback}}
+		$html = $this->parse_meta_placeholders( $html, $id );
+
 		// Basic fields
 		$title     = esc_html( get_the_title( $post ) );
 		$permalink = esc_url( get_permalink( $post ) );
@@ -224,14 +227,62 @@ class Frontend {
 			}
 		}
 
-		// Handle general metadata: {{meta:key_name}}
-		if ( preg_match_all( '/\{\{meta:([a-zA-Z0-9_\-]+)\}\}/', $html, $matches ) ) {
-			foreach ( $matches[1] as $idx => $meta_key ) {
-				$meta_val = get_post_meta( $id, $meta_key, true );
-				$html = str_replace( $matches[0][ $idx ], esc_html( $meta_val ), $html );
-			}
-		}
+		return $html;
+	}
 
+	/**
+	 * Parse general and conditional metadata placeholders.
+	 */
+	private function parse_meta_placeholders( string $html, int $id ): string {
+		while ( true ) {
+			$pos = strpos( $html, '{{meta:' );
+			if ( $pos === false ) {
+				break;
+			}
+			
+			$len = strlen( $html );
+			$brace_count = 2;
+			$match_end = -1;
+			
+			for ( $i = $pos + 7; $i < $len; $i++ ) {
+				if ( $html[ $i ] === '{' ) {
+					$brace_count++;
+				} elseif ( $html[ $i ] === '}' ) {
+					$brace_count--;
+					if ( $brace_count === 0 ) {
+						$match_end = $i;
+						break;
+					}
+				}
+			}
+			
+			if ( $match_end === -1 ) {
+				break;
+			}
+			
+			$content = substr( $html, $pos + 2, $match_end - $pos - 3 );
+			$content = substr( $content, 5 ); // Strip "meta:"
+			
+			$pipe_pos = strpos( $content, '|' );
+			if ( $pipe_pos !== false ) {
+				$meta_key = trim( substr( $content, 0, $pipe_pos ) );
+				$fallback = trim( substr( $content, $pipe_pos + 1 ) );
+			} else {
+				$meta_key = trim( $content );
+				$fallback = '';
+			}
+			
+			$meta_val = get_post_meta( $id, $meta_key, true );
+			
+			if ( is_scalar( $meta_val ) && (string) $meta_val !== '' ) {
+				$replacement = esc_html( (string) $meta_val );
+			} else {
+				$replacement = $fallback;
+			}
+			
+			$html = substr_replace( $html, $replacement, $pos, $match_end - $pos + 1 );
+		}
+		
 		return $html;
 	}
 

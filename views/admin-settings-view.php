@@ -179,9 +179,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<label for="pishtop_default_fallback"><?php esc_html_e( 'Default Fallback', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<select id="pishtop_default_fallback" name="pishtop_ai_settings[default_fallback]">
-							<option value="category" <?php selected( $settings['default_fallback'], 'category' ); ?>><?php esc_html_e( 'Native Category/Tag matching', 'pishtop-content-suggestion-with-ai' ); ?></option>
-							<option value="recent" <?php selected( $settings['default_fallback'], 'recent' ); ?>><?php esc_html_e( 'Recent posts from same post type', 'pishtop-content-suggestion-with-ai' ); ?></option>
-							<option value="hide" <?php selected( $settings['default_fallback'], 'hide' ); ?>><?php esc_html_e( 'Hide suggestion output entirely', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="recent" <?php selected( $settings['default_fallback'] ?? 'recent', 'recent' ); ?>><?php esc_html_e( 'Recent posts from same Target Post Type Filter', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="hide" <?php selected( $settings['default_fallback'] ?? 'recent', 'hide' ); ?>><?php esc_html_e( 'Hide suggestion output entirely', 'pishtop-content-suggestion-with-ai' ); ?></option>
 						</select>
 						<p class="description"><?php esc_html_e( 'What to output when OpenRouter API is unreachable or daily quota runs out.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
@@ -666,7 +665,7 @@ Rules:
 				<p class="description" style="margin-bottom: 20px;">
 					<?php esc_html_e( 'Templates are invoked via shortcode [pishtop_suggestions template="template_id"].', 'pishtop-content-suggestion-with-ai' ); ?><br>
 					<strong><?php esc_html_e( 'Placeholders:', 'pishtop-content-suggestion-with-ai' ); ?></strong>
-					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{post_id}}</code>, <code>{{id}}</code>, <code>{{meta:custom_key}}</code>, <code>{{price:price_key}}</code>
+					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{post_id}}</code>, <code>{{id}}</code>, <code>{{meta:custom_key}}</code> / <code>{{meta:custom_key | {{title}} }}</code>, <code>{{price:price_key}}</code>
 				</p>
 
 				<div id="pishtop-templates-repeater">
@@ -783,7 +782,7 @@ Rules:
 							<tr><td><code>{{excerpt}}</code></td><td><?php esc_html_e( 'Short summary description of content', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{post_date}}</code></td><td><?php esc_html_e( 'Date of publication', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{post_id}}</code> / <code>{{id}}</code></td><td><?php esc_html_e( 'Unique identifier of the post', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{meta:key_name}}</code></td><td><?php esc_html_e( 'Fetches custom postmeta key value', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{meta:key_name}}</code><br><span style="font-size:11px;color:#64748b;display:block;margin-top:2px;"><?php esc_html_e( 'With fallback:', 'pishtop-content-suggestion-with-ai' ); ?> <code>{{meta:key | {{title}} }}</code></span></td><td><?php esc_html_e( 'Fetches custom postmeta key value. Optional pipe allows fallback placeholder/text if key is missing or empty.', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{price:key_name}}</code></td><td><?php esc_html_e( 'WooCommerce formatted currency price value (e.g. {{price:_price}})', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 						</tbody>
 					</table>
