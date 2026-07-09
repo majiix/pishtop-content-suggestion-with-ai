@@ -349,8 +349,9 @@ class Cron {
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT option_name FROM {$wpdb->options} 
-					 WHERE option_name LIKE '_transient_timeout_pishtop_rec_%' 
+					 WHERE option_name LIKE %s 
 					 AND option_value > %d",
+					$wpdb->esc_like( '_transient_timeout_pishtop_rec_' ) . '%',
 					$time
 				)
 			);
