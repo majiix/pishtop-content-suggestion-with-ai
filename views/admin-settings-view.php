@@ -78,21 +78,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span class="quota-separator">/</span>
 					<span class="quota-limit"><?php echo esc_html( $total_posts ); ?></span>
 				</div>
-				<div style="margin-top: 4px; margin-bottom: 2px;">
-					<?php if ( $unindexed_posts > 0 ) : ?>
-						<span class="index-pending-badge" style="display:inline-flex; align-items:center; background:rgba(249,115,22,0.1); color:rgb(249,115,22); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">
-							<?php
-							/* translators: %d: number of unindexed posts */
-							echo esc_html( sprintf( __( '%d Pending', 'pishtop-content-suggestion-with-ai' ), $unindexed_posts ) );
-							?>
-						</span>
-					<?php else : ?>
-						<span class="index-complete-badge" style="display:inline-flex; align-items:center; background:rgba(5, 150, 105, 0.1); color:var(--success); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; border:1px solid rgba(5,150,105,0.2);">
-							<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="3" fill="none" style="margin-right:2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-							<?php esc_html_e( 'Indexed', 'pishtop-content-suggestion-with-ai' ); ?>
-						</span>
-					<?php endif; ?>
-				</div>
+
 				<p class="stat-meta"><?php esc_html_e( 'Local vector embeddings generated', 'pishtop-content-suggestion-with-ai' ); ?></p>
 			</div>
 			<?php
