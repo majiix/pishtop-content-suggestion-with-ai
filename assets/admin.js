@@ -373,24 +373,4 @@ jQuery(document).ready(function($) {
 	$('.pishtop-modal-close, .pishtop-modal-backdrop').on('click', function() {
 		$('#pishtop-context-modal').addClass('hidden');
 	});
-
-	// WordPress Media Library Selector for Fallback Image
-	$('#pishtop_select_fallback_image').on('click', function(e) {
-		e.preventDefault();
-
-		var fileFrame = wp.media.frames.fileFrame = wp.media({
-			title: 'Select Fallback Image',
-			button: {
-				text: 'Use this image'
-			},
-			multiple: false
-		});
-
-		fileFrame.on('select', function() {
-			var attachment = fileFrame.state().get('selection').first().toJSON();
-			$('#pishtop_fallback_image_url').val(attachment.url);
-		});
-
-		fileFrame.open();
-	});
 });

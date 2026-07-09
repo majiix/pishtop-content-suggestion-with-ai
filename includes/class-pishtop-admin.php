@@ -49,7 +49,6 @@ class Admin {
 			return;
 		}
 
-		wp_enqueue_media();
 		wp_enqueue_style( 'pishtop-admin-css', PISHTOP_AI_URL . 'assets/admin.css', [], PISHTOP_AI_VERSION );
 		wp_enqueue_script( 'pishtop-admin-js', PISHTOP_AI_URL . 'assets/admin.js', [ 'jquery' ], PISHTOP_AI_VERSION, true );
 
@@ -106,9 +105,9 @@ Rules:
 				'cron_indexing_delay'           => 5,
 				'log_cleanup_threshold_ratio'   => 90,
 				'maintenance_schedule'          => 'daily',
-				'fallback_image_url'            => '',
 				'thumbnail_size'                => 'medium',
 				'delete_data_on_uninstall'      => 0,
+				'limit_candidates_same_category' => 0,
 			] );
 		}
 
@@ -184,9 +183,9 @@ Rules:
 		$sanitized['cron_ranking_batch_size'] = isset( $input['cron_ranking_batch_size'] ) ? max( 1, intval( $input['cron_ranking_batch_size'] ) ) : 5;
 		$sanitized['log_cleanup_threshold_ratio'] = isset( $input['log_cleanup_threshold_ratio'] ) ? max( 10, min( 100, intval( $input['log_cleanup_threshold_ratio'] ) ) ) : 90;
 		$sanitized['maintenance_schedule'] = isset( $input['maintenance_schedule'] ) ? sanitize_key( $input['maintenance_schedule'] ) : 'daily';
-		$sanitized['fallback_image_url'] = isset( $input['fallback_image_url'] ) ? esc_url_raw( $input['fallback_image_url'] ) : '';
 		$sanitized['thumbnail_size'] = isset( $input['thumbnail_size'] ) ? sanitize_key( $input['thumbnail_size'] ) : 'medium';
 		$sanitized['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
+		$sanitized['limit_candidates_same_category'] = ! empty( $input['limit_candidates_same_category'] ) ? 1 : 0;
 		
 		// Prompt sanitization - preserve linebreaks but strip injection risk markup if needed. Support custom template structure.
 		$sanitized['prompt_template'] = isset( $input['prompt_template'] ) ? sanitize_textarea_field( $input['prompt_template'] ) : '';

@@ -47,7 +47,6 @@ class Matching {
 		$max_ai_count = max( 1, $max_ai_count );
 
 		$ai_count = min( $count, $max_ai_count );
-		$fallback_count = $count - $ai_count;
 
 		// 2. Fetch AI suggestions (either from cache or by querying API)
 		$ai_ids = [];
@@ -56,12 +55,10 @@ class Matching {
 			$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $template_id, $post_type );
 			$cached_ids    = get_transient( $transient_key );
 
-			// Check if cache has enough items for our AI count (at least $ai_count)
-			if ( false !== $cached_ids && is_array( $cached_ids ) && count( $cached_ids ) >= $ai_count ) {
+			if ( false !== $cached_ids && is_array( $cached_ids ) ) {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
 			} else {
-				// Cache miss or not enough items for the required AI count.
-				// We query the API for the maximum allowed AI recommendations ($max_ai_count) so we fully populate the cache.
+				// Cache miss.
 				if ( self::has_unindexed_posts() ) {
 					\pishtop_log( 'INFO', "Indexing in progress. Returning native fallback for post {$post_id}." );
 					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
@@ -88,6 +85,8 @@ class Matching {
 							set_transient( $transient_key, $api_ids, $cache_ttl );
 							$ai_ids = array_slice( $api_ids, 0, $ai_count );
 						} else {
+							// Cache failure for 300 seconds to protect site speed
+							set_transient( $transient_key, [], 300 );
 							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 						}
 					}
@@ -95,7 +94,8 @@ class Matching {
 			}
 		}
 
-		// 3. Fetch fallback suggestions if requested count exceeds AI cap
+		// 3. Fetch fallback suggestions if requested count exceeds AI or cached results
+		$fallback_count = $count - count( $ai_ids );
 		$fallback_ids = [];
 		if ( $fallback_count > 0 ) {
 			// Exclude the current post ID and all IDs already recommended by AI
@@ -310,6 +310,7 @@ class Matching {
 
 		// Hide out of stock items in fallback if WooCommerce setting is enabled
 		if ( 'product' === $post_type && class_exists( 'WooCommerce' ) && 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			$args['meta_query'] = [
 				[
 					'key'     => '_stock_status',

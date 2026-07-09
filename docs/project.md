@@ -55,4 +55,6 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * standalone similarity and syntax check:
   `php -f C:/Users/Espadana/.gemini/antigravity/brain/66a219a9-6cdf-4df6-b5e5-774495a551dd/scratch/test-standalone.php`
 * PHP syntax lint check:
+  `python C:\Users\Espadana\.gemini\antigravity\brain\e7b77469-ffe3-4826-b839-7c56da8b0483\scratch\lint.py`
+* PowerShell PHP syntax lint check:
   `Get-ChildItem -Filter *.php -Recurse | ForEach-Object { php -l $_.FullName }`

@@ -23,7 +23,7 @@ class Frontend {
 		add_shortcode( 'pishtop_suggestions', [ $this, 'render_suggestions_shortcode' ] );
 		add_shortcode( 'ai_related_posts', [ $this, 'render_suggestions_shortcode' ] );
 		add_action( 'init', [ $this, 'register_gutenberg_block' ] );
-		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+		add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
 
 		// AJAX frontend suggestions retrievals
 		add_action( 'wp_ajax_pishtop_get_suggestions', [ $this, 'ajax_get_suggestions' ] );
@@ -34,27 +34,14 @@ class Frontend {
 		add_filter( 'pishtop_ai_recommendations_transient_key', [ $this, 'override_woocommerce_transient_key' ], 10, 4 );
 	}
 
-	public function enqueue_assets() {
-		wp_enqueue_style( 'pishtop-frontend-css', PISHTOP_AI_URL . 'assets/frontend.css', [], PISHTOP_AI_VERSION );
-		wp_enqueue_script( 'pishtop-frontend-js', PISHTOP_AI_URL . 'assets/frontend.js', [ 'jquery' ], PISHTOP_AI_VERSION, true );
+	public function register_assets() {
+		wp_register_style( 'pishtop-frontend-css', PISHTOP_AI_URL . 'assets/frontend.css', [], PISHTOP_AI_VERSION );
+		wp_register_script( 'pishtop-frontend-js', PISHTOP_AI_URL . 'assets/frontend.js', [ 'jquery' ], PISHTOP_AI_VERSION, true );
 
 		wp_localize_script( 'pishtop-frontend-js', 'pishtopFrontend', [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'nonce'   => wp_create_nonce( 'pishtop_frontend_action' ),
 		] );
-
-		// Inject custom CSS from all registered templates
-		$templates = get_option( 'pishtop_ai_templates', [] );
-		$combined_css = '';
-		foreach ( $templates as $tpl ) {
-			if ( ! empty( $tpl['custom_css'] ) ) {
-				$combined_css .= "\n" . $tpl['custom_css'];
-			}
-		}
-
-		if ( ! empty( $combined_css ) ) {
-			wp_add_inline_style( 'pishtop-frontend-css', $combined_css );
-		}
 	}
 
 	/**
@@ -82,6 +69,23 @@ class Frontend {
 	 * Render the suggestions shortcode instantly with loading skeleton.
 	 */
 	public function render_suggestions_shortcode( $atts ) {
+		// Enqueue assets dynamically when shortcode is active
+		wp_enqueue_style( 'pishtop-frontend-css' );
+		wp_enqueue_script( 'pishtop-frontend-js' );
+
+		// Inject custom CSS from all registered templates
+		$templates = get_option( 'pishtop_ai_templates', [] );
+		$combined_css = '';
+		foreach ( $templates as $tpl ) {
+			if ( ! empty( $tpl['custom_css'] ) ) {
+				$combined_css .= "\n" . $tpl['custom_css'];
+			}
+		}
+
+		if ( ! empty( $combined_css ) ) {
+			wp_add_inline_style( 'pishtop-frontend-css', $combined_css );
+		}
+
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 
@@ -141,6 +145,11 @@ class Frontend {
 			wp_send_json_error( 'Missing post ID' );
 		}
 
+		$post = get_post( $post_id );
+		if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
+			wp_send_json_error( 'Unauthorized post query' );
+		}
+
 		// Fetch recommendations
 		$rec_ids = Matching::get_recommendations( $post_id, $limit, $template_id, $post_type );
 		if ( empty( $rec_ids ) ) {
@@ -185,7 +194,7 @@ class Frontend {
 		
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$thumb_size = ! empty( $settings['thumbnail_size'] ) ? sanitize_key( $settings['thumbnail_size'] ) : 'medium';
-		$fallback_img = ! empty( $settings['fallback_image_url'] ) ? esc_url_raw( $settings['fallback_image_url'] ) : PISHTOP_AI_URL . 'assets/placeholder.png';
+		$fallback_img = PISHTOP_AI_URL . 'assets/placeholder.svg';
 
 		$image_url = get_the_post_thumbnail_url( $post, $thumb_size );
 		if ( ! $image_url ) {

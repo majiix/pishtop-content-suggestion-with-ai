@@ -220,17 +220,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="pishtop-card" style="margin-top: 20px;">
 				<h2><?php esc_html_e( 'Display & Thumbnail Settings', 'pishtop-content-suggestion-with-ai' ); ?></h2>
 				<div class="form-row">
-					<label for="pishtop_fallback_image_url"><?php esc_html_e( 'Default Fallback Image URL', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap">
-						<div style="display: flex; gap: 10px; align-items: center;">
-							<input type="url" id="pishtop_fallback_image_url" name="pishtop_ai_settings[fallback_image_url]" value="<?php echo esc_url( $settings['fallback_image_url'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_url( PISHTOP_AI_URL . 'assets/placeholder.png' ); ?>" />
-							<button type="button" class="button" id="pishtop_select_fallback_image"><?php esc_html_e( 'Select Image', 'pishtop-content-suggestion-with-ai' ); ?></button>
-						</div>
-						<p class="description"><?php esc_html_e( 'Fallback placeholder image URL used for post recommendations that do not have a featured image.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					</div>
-				</div>
-
-				<div class="form-row">
 					<label for="pishtop_thumbnail_size"><?php esc_html_e( 'Default Thumbnail Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<select id="pishtop_thumbnail_size" name="pishtop_ai_settings[thumbnail_size]">
@@ -363,6 +352,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div class="field-wrap">
 						<input type="number" id="pishtop_similarity_candidate_count" name="pishtop_ai_settings[similarity_candidate_count]" value="<?php echo esc_attr( $settings['similarity_candidate_count'] ); ?>" min="5" max="200" class="small-text" />
 						<p class="description"><?php esc_html_e( 'Number of top cosine similarity matches sent to the LLM for final re-ranking (Default: 50).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label><?php esc_html_e( 'Limit Candidates by Category', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" name="pishtop_ai_settings[limit_candidates_same_category]" value="1" <?php checked( $settings['limit_candidates_same_category'] ?? 0 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'Strictly limit candidates matching to posts sharing at least one category or tag with the current post to increase database speed and match quality.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
@@ -759,29 +759,32 @@ Rules:
 			
 			<div class="help-section-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
 				<div>
-					<h3>1. <?php esc_html_e( 'Shortcode Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><?php esc_html_e( 'Use the shortcode anywhere on posts or pages to render related suggestions. Recommended to insert in template files or via editors.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace;">[pishtop_suggestions count="5" template="default_list"]</pre>
+					<h3>1. <?php esc_html_e( 'Shortcode & Block Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><?php esc_html_e( 'Use the shortcode anywhere on posts, pages, or widgets to display AI recommendations. Supports fallback rendering if offline.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap;">[pishtop_suggestions count="5" template="default_list"]</pre>
+					<p><strong><?php esc_html_e( 'Alias Shortcode:', 'pishtop-content-suggestion-with-ai' ); ?></strong> <code>[ai_related_posts]</code></p>
 					<p><strong><?php esc_html_e( 'Attributes:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
-					<ul style="list-style: disc; padding-left: 20px;">
-						<li><code>count</code>: <?php esc_html_e( 'Max items to display (default is settings value).', 'pishtop-content-suggestion-with-ai' ); ?></li>
-						<li><code>template</code>: <?php esc_html_e( 'Template ID/handle defined under Display Templates (e.g. default_list).', 'pishtop-content-suggestion-with-ai' ); ?></li>
+					<ul style="list-style: disc; padding-left: 20px; margin-top: 5px;">
+						<li><code>count</code> / <code>limit</code>: <?php esc_html_e( 'Max items to display (overrides default settings count).', 'pishtop-content-suggestion-with-ai' ); ?></li>
+						<li><code>template</code>: <?php esc_html_e( 'Template ID handle defined under Display Templates.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 						<li><code>post_id</code>: <?php esc_html_e( 'Optionally retrieve related items for a specific post instead of the current loop post.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 					</ul>
+					<p style="margin-top: 10px;"><strong><?php esc_html_e( 'Gutenberg Block:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
+					<p><?php esc_html_e( 'Insert the "PishTop AI Suggestions" block in Gutenberg. Includes block settings for Count, Display Template, and target post type.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 				
 				<div>
-					<h3>2. <?php esc_html_e( 'Templates System Placeholders', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><?php esc_html_e( 'Design custom repeater lists and layout rows. Placeholders are dynamically interpolated during shortcode render:', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<h3>2. <?php esc_html_e( 'Template System & Custom Fields', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><?php esc_html_e( 'Design repeater layouts and item markup. Placeholders are dynamically interpolated during render:', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					<table class="widefat fixed" style="box-shadow:none; border: 1px solid #e2e8f0; margin-top:10px;">
 						<tbody>
 							<tr><td><code>{{title}}</code></td><td><?php esc_html_e( 'Post or product title', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{permalink}}</code></td><td><?php esc_html_e( 'URL redirecting to the post', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{image_url}}</code></td><td><?php esc_html_e( 'Featured image source (uses placeholder if none)', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{image_url}}</code></td><td><?php esc_html_e( 'Featured image source (uses placeholder or fallback if empty)', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{excerpt}}</code></td><td><?php esc_html_e( 'Short summary description of content', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{post_date}}</code></td><td><?php esc_html_e( 'Date of publication', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{meta:custom_field}}</code></td><td><?php esc_html_e( 'Fetches custom postmeta key value', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{price:price_key}}</code></td><td><?php esc_html_e( 'WooCommerce formatted numeric field', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{meta:key_name}}</code></td><td><?php esc_html_e( 'Fetches custom postmeta key value', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{price:key_name}}</code></td><td><?php esc_html_e( 'WooCommerce formatted currency price value (e.g. {{price:_price}})', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 						</tbody>
 					</table>
 				</div>
@@ -791,47 +794,110 @@ Rules:
 
 			<div class="help-section-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
 				<div>
-					<h3>3. <?php esc_html_e( 'Matching & Re-ranking Mechanism', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><strong><?php esc_html_e( 'Step 1: Database Pre-filtering', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'Plugin queries the database to find candidate matching posts. Candidates are pre-filtered by post type, taxonomies (categories/tags), and WPML/Polylang languages first to prevent slow database queries.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<h3>3. <?php esc_html_e( 'Matching Engine & Final Sorting', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Step 1: SQL Pre-filtering & Ceiling', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Filters candidates in SQL by post types, categories/tags, and active model. Limits database retrieval (SQL Candidate Ceiling) to prevent memory issues.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					
 					<p><strong><?php esc_html_e( 'Step 2: Cosine Similarity', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'PHP calculates mathematical cosine similarity between the current post\'s text embedding vector and all candidates vectors. The top matches (e.g. 50 items) are kept.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<?php esc_html_e( 'PHP calculates mathematical cosine similarity between the current post\'s text embedding and all candidate vectors. The top similarity matches (e.g. 50 items) are kept.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					
 					<p><strong><?php esc_html_e( 'Step 3: LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'The top similar candidates are sent to the selected OpenRouter Chat LLM along with instructions. The LLM evaluates context relevance and ranks the best results.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<?php esc_html_e( 'Sends top similarity candidates to the selected OpenRouter Chat LLM. System instructions block prompt injection by treating titles/excerpts strictly as raw semantic data.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Step 4: Hybrid Fallback & Sorting', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'If the AI response is smaller than the requested count, it is filled using similarity candidates. AI matches stay on top. The final recommendation output can be sorted by: Similarity, Random, Date Descending, Date Ascending, or Title Ascending.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 				
 				<div>
-					<h3>4. <?php esc_html_e( 'API Quotas & Mutex Caching', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><strong><?php esc_html_e( 'Daily Limits & Costs Control', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'To prevent surprise bills, separate daily limits block API operations once exceeded, automatically falling back to native category recommendation matching. Quotas reset at midnight based on local WordPress timezone settings.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-
+					<h3>4. <?php esc_html_e( 'Caching & Mutex Stampede Protection', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Transient Caching', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Recommendations are cached in WordPress transients using configurable TTL durations (Hours/Days) to prevent duplicate API costs.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					
 					<p><strong><?php esc_html_e( 'Mutex Lock (Cache Stampede Protection)', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'During cache expiration, if multiple concurrent requests hit the same post, only the first request makes an external API call to OpenRouter. Subsequent concurrent requests immediately receive a native category fallback list rather than blocking execution or making duplicate costly API calls. Lock expires after 60 seconds.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<?php esc_html_e( 'During cache expiration, if multiple visitors request the same popular page concurrently, only the first request queries OpenRouter. Subsequent concurrent requests immediately receive fallback category recommendations rather than blocking the visitors or duplicate billing. Configurable Mutex Lock TTL controls the transient safety window.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Cache Flush Utilities', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Clear recommendation caches (transients & postmeta) or clear embeddings vector cache (forces full table rebuild) instantly via the action buttons under general settings.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 
 				<div>
-					<h3>5. <?php esc_html_e( 'WooCommerce Support & Filters', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><strong><?php esc_html_e( 'Dynamic WooCommerce Pages', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'When rendering recommendations on WooCommerce Cart, Checkout, or Order Received (Thank You) pages, the plugin automatically overrides generic page titles/descriptions with products from the active customer\'s cart or order details.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<h3>5. <?php esc_html_e( 'WooCommerce Contexts & Caching Security', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Cart & Checkout Extraction', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'When matching recommendations on WooCommerce Cart, Checkout, or Thank You pages, the plugin bypasses the page\'s generic title. It queries the active session cart items or order items, and uses those product names to build the vector matching text.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
-					<p><strong><?php esc_html_e( 'Cache Isolation & Security', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'Recommendation caching keys are partitioned using secure MD5 cart item hashes and order IDs. This prevents different users from seeing each other\'s cached product recommendations on WooCommerce pages.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<p><strong><?php esc_html_e( 'Out-of-Stock Catalog Filtering', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Automatically respects the WooCommerce settings to exclude out-of-stock items from candidate queries and fallback lists.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
-					<p><strong><?php esc_html_e( 'Developer Filter Hooks', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'Customize matching texts and cache keys via standard WordPress filters:', 'pishtop-content-suggestion-with-ai' ); ?><br>
-					<code>pishtop_ai_post_text</code> – <?php esc_html_e( 'Filter raw content source text prior to generating embedding vectors.', 'pishtop-content-suggestion-with-ai' ); ?><br>
-					<code>pishtop_ai_recommendations_transient_key</code> – <?php esc_html_e( 'Filter the transient caching key for custom routing.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<p><strong><?php esc_html_e( 'Customer Caching Isolation', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Transient recommendation keys on Cart/Checkout pages are appended with sorted cart item hashes (MD5) or order IDs. This prevents cross-user cache leakage so users only see their own recommendations.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 
 				<div>
-					<h3>6. <?php esc_html_e( 'Viewport Lazy Loading', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-					<p><strong><?php esc_html_e( 'Intersection Observer', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'To conserve server bandwidth and API quotas, frontend suggestions are loaded lazily. The browser postpones the AJAX retrieval until the element scrolls close to the visible viewport (within 100px).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<h3>6. <?php esc_html_e( 'Cron Workers & Inline safety Runners', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Scheduled Indexing', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Background cron worker executes at custom minute intervals, processing unindexed posts batches (configurable size) to generate embedding vectors.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 
-					<p><strong><?php esc_html_e( 'Legacy Fallback Support', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
-					<?php esc_html_e( 'For older browsers that do not support modern IntersectionObserver APIs, the plugin seamlessly falls back to standard instant page load AJAX retrieval.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					<p><strong><?php esc_html_e( 'Pre-cached Ranking', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Optionally enable the background ranking cron worker to pre-generate and cache AI recommendations in the background. Runs only after embedding indexes are fully complete.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong>PEER/Inline Fallback Runner</strong><br>
+					<?php esc_html_e( 'If the WordPress scheduled cron events fail or are overdue by more than 2 intervals, the plugin automatically executes a small worker batch inline on page load to keep embeddings up to date.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Staged Worker Executions', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Until initial vector database indexing is completely finished, the plugin stages executions by enforcing category fallbacks to prevent empty/broken recommendation blocks.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+				</div>
+
+				<div>
+					<h3>7. <?php esc_html_e( 'API Quotas & Viewport Lazy Loading', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Dual Daily API Quotas', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Admins can configure separate daily limits for embedding generation requests (indexing) and LLM re-ranking requests (retrieval) to prevent surprise bills. Once reached, fallback recommendations are rendered.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					
+					<p><strong><?php esc_html_e( 'Timezone-Aligned Resets', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Daily usage counts reset automatically at midnight. Resets are aligned to the WordPress local timezone setting to avoid timezone drift.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Viewport Lazy Loading', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Frontend suggestions utilize an Intersection Observer to delay the AJAX request until the suggestions block is close to the visible viewport (within 100px), conserving bandwidth and API costs. Falls back to standard load on legacy browsers.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+				</div>
+
+				<div>
+					<h3>8. <?php esc_html_e( 'Log Caps & Warning Console', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Row Capacity & Retention Pruning', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Diagnostics logs are stored in a custom database table capped at 5,000 rows. Periodic cron runs clean up rows older than the retention period.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					
+					<p><strong><?php esc_html_e( 'Ratio-Based Pruning', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'To prevent database strain from repeated delete queries, pruning deletes rows down to a configured cleanup threshold ratio (e.g. 90% of capacity).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Truncation Warning Log', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'If log volume is extremely high and forces early truncation before the retention date, a WARNING notice: "Logs are being truncated early due to high event volume" is automatically logged to alert the admin.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+				</div>
+
+				<div style="grid-column: span 2;">
+					<h3>9. <?php esc_html_e( 'Developer API Hooks & Filters', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><?php esc_html_e( 'Extend or override plugin functionality using standard WordPress filters in your theme\'s functions.php or custom plugin:', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px;">
+						<div>
+							<p><strong><code>pishtop_ai_post_text</code></strong> – <?php esc_html_e( 'Filter raw concatenated content text before generating embeddings.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+							<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; font-size: 11px;">add_filter( 'pishtop_ai_post_text', function( $text, $post_id ) {
+    // Append custom fields or modify text before sending to OpenRouter
+    $custom_meta = get_post_meta( $post_id, 'custom_field', true );
+    if ( $custom_meta ) {
+        $text .= " | " . $custom_meta;
+    }
+    return $text;
+}, 10, 2 );</pre>
+						</div>
+						<div>
+							<p><strong><code>pishtop_ai_recommendations_transient_key</code></strong> – <?php esc_html_e( 'Customize transient cache key names for advanced segmentation.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+							<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; font-size: 11px;">add_filter( 'pishtop_ai_recommendations_transient_key', function( $key, $post_id, $template_id, $post_type ) {
+    // Add context to transient key, such as user role or region
+    if ( is_user_logged_in() ) {
+        $key .= '_logged_in';
+    }
+    return $key;
+}, 10, 4 );</pre>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

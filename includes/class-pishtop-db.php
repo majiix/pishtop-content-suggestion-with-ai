@@ -162,8 +162,12 @@ class Database {
 
 		// Priority/pre-filtering using taxonomy matching
 		if ( ! empty( $terms ) ) {
+			$settings = get_option( 'pishtop_ai_settings', [] );
+			$restrict_cats = ! empty( $settings['limit_candidates_same_category'] );
+			$join_type = $restrict_cats ? 'JOIN' : 'LEFT JOIN';
+
 			$term_list = implode( ',', array_map( 'intval', $terms ) );
-			$from  .= " LEFT JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id IN ($term_list)";
+			$from  .= " {$join_type} {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id IN ($term_list)";
 			$select .= ", COUNT(tr.term_taxonomy_id) as term_matches";
 			$groupby = "GROUP BY emb.post_id";
 			$orderby = "ORDER BY term_matches DESC, p.post_date DESC";
@@ -227,6 +231,11 @@ class Database {
 	 * Enforce maximum rows in log database table.
 	 */
 	private static function cap_logs_table() {
+		if ( get_transient( 'pishtop_logs_cap_checked' ) ) {
+			return;
+		}
+		set_transient( 'pishtop_logs_cap_checked', true, 600 ); // 10 minutes
+
 		global $wpdb;
 		$table = $wpdb->prefix . 'pishtop_logs';
 

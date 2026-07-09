@@ -41,7 +41,6 @@ class Cron {
 	 */
 	public static function deactivate() {
 		wp_clear_scheduled_hook( 'pishtop_ai_daily_maintenance' );
-		wp_clear_scheduled_hook( 'pishtop_ai_regeneration_queue' );
 		wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
 	}
 

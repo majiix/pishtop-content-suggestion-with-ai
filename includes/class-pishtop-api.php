@@ -261,9 +261,12 @@ Rules:
 		// Parse IDs: supports JSON array, comma-separated list, etc.
 		$parsed_ids = [];
 		if ( ! empty( $content ) ) {
-			// First attempt standard JSON decode if it starts with [ and ends with ]
-			if ( strpos( $content, '[' ) === 0 && strrpos( $content, ']' ) === strlen( $content ) - 1 ) {
-				$decoded = json_decode( $content, true );
+			// First attempt to locate and decode JSON array if surrounded by markdown prose or fences
+			$start_pos = strpos( $content, '[' );
+			$end_pos   = strrpos( $content, ']' );
+			if ( false !== $start_pos && false !== $end_pos && $end_pos > $start_pos ) {
+				$json_str = substr( $content, $start_pos, $end_pos - $start_pos + 1 );
+				$decoded  = json_decode( $json_str, true );
 				if ( is_array( $decoded ) ) {
 					foreach ( $decoded as $val ) {
 						$val = intval( $val );
