@@ -126,7 +126,16 @@ class Matching {
 
 		// 1. Get or generate current post embedding vector
 		$current_vector = null;
-		$stored = Database::get_embedding( $post_id );
+		$is_dynamic = false;
+		if ( class_exists( 'WooCommerce' ) ) {
+			$cart_page_id = wc_get_page_id( 'cart' );
+			$checkout_page_id = wc_get_page_id( 'checkout' );
+			if ( $post_id === $cart_page_id || $post_id === $checkout_page_id ) {
+				$is_dynamic = true;
+			}
+		}
+
+		$stored = $is_dynamic ? null : Database::get_embedding( $post_id );
 
 		if ( $stored && $stored['model'] === $emb_model ) {
 			$current_vector = $stored['embedding'];
@@ -140,7 +149,9 @@ class Matching {
 			if ( is_wp_error( $vector ) ) {
 				return $vector;
 			}
-			Database::save_embedding( $post_id, $lang, $emb_model, $vector );
+			if ( ! $is_dynamic ) {
+				Database::save_embedding( $post_id, $lang, $emb_model, $vector );
+			}
 			$current_vector = $vector;
 		}
 
