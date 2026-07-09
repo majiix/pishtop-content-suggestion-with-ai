@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,13 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.0.8 =
+* Guard WooCommerce cart access to prevent PHP fatal errors when WooCommerce cart is uninitialized.
+* Resolve query crash by checking if taxonomy terms is WP_Error.
+* Filter LLM-ranked IDs against candidates to drop prose numbers.
+* Query configured post types in sorting logic to support hidden types.
+* Prepare transient timeout LIKE query placeholder in database.
 
 = 1.0.7 =
 * Fix cron reschedule loop during direct hits to wp-cron.php (prevents worker execution blocking).
