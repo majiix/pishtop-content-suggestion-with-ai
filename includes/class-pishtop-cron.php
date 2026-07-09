@@ -74,11 +74,8 @@ class Cron {
 
 		if ( $enable_embedding || $enable_ranking ) {
 			$current_worker_schedule = wp_get_schedule( 'pishtop_ai_cron_worker_event' );
-			$saved_minutes = isset( $settings['cron_interval_minutes'] ) ? intval( $settings['cron_interval_minutes'] ) : 15;
-			$schedules = wp_get_schedules();
-			$scheduled_interval = $schedules['pishtop_custom_interval']['interval'] ?? 0;
 
-			if ( $force_reschedule || ! $current_worker_schedule || $scheduled_interval !== ( $saved_minutes * MINUTE_IN_SECONDS ) ) {
+			if ( $force_reschedule || ! $current_worker_schedule ) {
 				wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
 				wp_schedule_event( time() + 30, 'pishtop_custom_interval', 'pishtop_ai_cron_worker_event' );
 			}

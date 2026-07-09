@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,14 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.0.7 =
+* Fix cron reschedule loop during direct hits to wp-cron.php (prevents worker execution blocking).
+* Prevent PHP type errors on post saving hook when post is null.
+* Add weekly custom cron interval schedule registration.
+* Optimize database queries in ranking worker by checking active transients timeout option first.
+* Guard against SQL syntax errors in cron queries when allowed post types is empty.
+* Clear background indexing cron single events on deactivation and uninstall.
 
 = 1.0.6 =
 * Add template fields validation: enforces non-empty Wrapper HTML and Item HTML, and verifies Wrapper HTML contains {{items}} prior to submission.
