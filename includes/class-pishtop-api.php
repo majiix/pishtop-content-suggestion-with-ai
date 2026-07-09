@@ -260,6 +260,7 @@ Rules:
 
 		// Parse IDs: supports JSON array, comma-separated list, etc.
 		$parsed_ids = [];
+		$candidate_ids = array_column( $candidates_data, 'id' );
 		if ( ! empty( $content ) ) {
 			// First attempt to locate and decode JSON array if surrounded by markdown prose or fences
 			$start_pos = strpos( $content, '[' );
@@ -270,7 +271,7 @@ Rules:
 				if ( is_array( $decoded ) ) {
 					foreach ( $decoded as $val ) {
 						$val = intval( $val );
-						if ( $val > 0 && ! in_array( $val, $parsed_ids, true ) ) {
+						if ( $val > 0 && ! in_array( $val, $parsed_ids, true ) && in_array( $val, $candidate_ids, true ) ) {
 							$parsed_ids[] = $val;
 						}
 					}
@@ -283,7 +284,7 @@ Rules:
 				if ( ! empty( $matches[0] ) ) {
 					foreach ( $matches[0] as $match ) {
 						$val = intval( $match );
-						if ( $val > 0 && ! in_array( $val, $parsed_ids, true ) ) {
+						if ( $val > 0 && ! in_array( $val, $parsed_ids, true ) && in_array( $val, $candidate_ids, true ) ) {
 							$parsed_ids[] = $val;
 						}
 					}

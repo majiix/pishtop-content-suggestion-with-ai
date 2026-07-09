@@ -80,6 +80,7 @@ class Database {
 
 		wp_cache_delete( 'pishtop_embedding_' . $post_id, 'pishtop_embeddings' );
 		wp_cache_delete( 'pishtop_candidates_' . $post_id, 'pishtop_embeddings' );
+		wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 	}
 
 	/**
@@ -118,6 +119,7 @@ class Database {
 		$wpdb->delete( $table, [ 'post_id' => $post_id ], [ '%d' ] );
 		wp_cache_delete( 'pishtop_embedding_' . $post_id, 'pishtop_embeddings' );
 		wp_cache_delete( 'pishtop_candidates_' . $post_id, 'pishtop_embeddings' );
+		wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 	}
 
 	/**
@@ -161,7 +163,7 @@ class Database {
 		}
 
 		// Priority/pre-filtering using taxonomy matching
-		if ( ! empty( $terms ) ) {
+		if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
 			$settings = get_option( 'pishtop_ai_settings', [] );
 			$restrict_cats = ! empty( $settings['limit_candidates_same_category'] );
 			$join_type = $restrict_cats ? 'JOIN' : 'LEFT JOIN';

@@ -373,6 +373,11 @@ class Matching {
 	 * Check if there are any unindexed posts in the database.
 	 */
 	public static function has_unindexed_posts() {
+		$cached = wp_cache_get( 'pishtop_has_unindexed', 'pishtop_posts' );
+		if ( false !== $cached ) {
+			return (bool) $cached;
+		}
+
 		global $wpdb;
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
@@ -393,7 +398,9 @@ class Matching {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$unindexed_exists = $wpdb->get_var( $query );
 		
-		return ! empty( $unindexed_exists );
+		$res = ! empty( $unindexed_exists );
+		wp_cache_set( 'pishtop_has_unindexed', $res, 'pishtop_posts', 300 );
+		return $res;
 	}
 
 	/**
@@ -415,12 +422,13 @@ class Matching {
 			shuffle( $ids );
 			return $ids;
 		}
+		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 
 		$posts_to_sort = get_posts( [
 			'post__in'       => $ids,
 			'orderby'        => 'post__in',
 			'posts_per_page' => -1,
-			'post_type'      => 'any',
+			'post_type'      => $allowed_types,
 		] );
 
 		if ( 'date_desc' === $sort_option ) {

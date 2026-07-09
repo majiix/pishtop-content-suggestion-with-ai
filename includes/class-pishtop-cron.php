@@ -24,6 +24,7 @@ class Cron {
 		// Hook post save to trigger background indexing
 		add_action( 'save_post', [ $this, 'queue_post_indexing' ], 10, 2 );
 		add_action( 'pishtop_ai_index_post_event', [ $this, 'background_index_post' ] );
+		add_action( 'deleted_post', [ $this, 'delete_post_embedding' ] );
 
 		// Hook daily maintenance
 		add_action( 'pishtop_ai_daily_maintenance', [ $this, 'run_daily_maintenance' ] );
@@ -118,12 +119,20 @@ class Cron {
 
 		// Clear cached recommendations for this post since content changed
 		Matching::clear_cache( $post_id );
+		wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 
 		// Schedule background worker event to generate embedding (delayed by settings value)
 		$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
 		if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
 			wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
 		}
+	}
+
+	/**
+	 * Clean up embedding and cache when a post is deleted.
+	 */
+	public function delete_post_embedding( $post_id ) {
+		Database::delete_embedding( (int) $post_id );
 	}
 
 	/**
