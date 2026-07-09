@@ -28,6 +28,7 @@ delete_option( 'pishtop_ai_cron_last_run' );
 // Delete cron hooks
 wp_clear_scheduled_hook( 'pishtop_ai_daily_maintenance' );
 wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
+wp_clear_scheduled_hook( 'pishtop_ai_index_post_event' );
 
 // Delete transient/options used for quota/usage tracking
 delete_option( 'pishtop_ai_quota_usage' );

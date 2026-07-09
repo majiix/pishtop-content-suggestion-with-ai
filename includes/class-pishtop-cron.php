@@ -43,6 +43,7 @@ class Cron {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( 'pishtop_ai_daily_maintenance' );
 		wp_clear_scheduled_hook( 'pishtop_ai_cron_worker_event' );
+		wp_clear_scheduled_hook( 'pishtop_ai_index_post_event' );
 	}
 
 	/**
@@ -96,6 +97,13 @@ class Cron {
 		}
 
 		if ( wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+
+		if ( ! $post instanceof \WP_Post ) {
+			$post = get_post( $post_id );
+		}
+		if ( ! $post instanceof \WP_Post ) {
 			return;
 		}
 
@@ -200,6 +208,9 @@ class Cron {
 	 * Register custom cron intervals.
 	 */
 	public function register_cron_intervals( $schedules ) {
+		if ( ! is_array( $schedules ) ) {
+			$schedules = [];
+		}
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$minutes = isset( $settings['cron_interval_minutes'] ) ? intval( $settings['cron_interval_minutes'] ) : 15;
 		$schedules['pishtop_custom_interval'] = [
@@ -207,6 +218,14 @@ class Cron {
 			/* translators: %d: number of minutes */
 			'display'  => sprintf( __( 'Every %d Minutes', 'pishtop-content-suggestion-with-ai' ), $minutes ),
 		];
+
+		if ( ! isset( $schedules['weekly'] ) ) {
+			$schedules['weekly'] = [
+				'interval' => WEEK_IN_SECONDS,
+				'display'  => __( 'Once Weekly', 'pishtop-content-suggestion-with-ai' ),
+			];
+		}
+
 		return $schedules;
 	}
 
@@ -241,6 +260,9 @@ class Cron {
 		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
 
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		if ( empty( $allowed_types ) ) {
+			return;
+		}
 		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
 
 		$batch_size = isset( $settings['cron_embedding_batch_size'] ) ? max( 1, intval( $settings['cron_embedding_batch_size'] ) ) : 5;
@@ -296,6 +318,9 @@ class Cron {
 		global $wpdb;
 		$emb_model = ! empty( $settings['embedding_model'] ) ? $settings['embedding_model'] : 'openai/text-embedding-3-small';
 		$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
+		if ( empty( $allowed_types ) ) {
+			return;
+		}
 		$placeholders = implode( ',', array_fill( 0, count( $allowed_types ), '%s' ) );
 
 		$ranking_batch_size = isset( $settings['cron_ranking_batch_size'] ) ? max( 1, intval( $settings['cron_ranking_batch_size'] ) ) : 5;
@@ -320,12 +345,40 @@ class Cron {
 		$limit = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 		$ranking_count = 0;
 
+		$cached_post_ids = [];
+		if ( ! wp_using_ext_object_cache() && ! empty( $post_ids ) ) {
+			$time = time();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT option_name FROM {$wpdb->options} 
+					 WHERE option_name LIKE '_transient_timeout_pishtop_rec_%' 
+					 AND option_value > %d",
+					$time
+				)
+			);
+			if ( is_array( $rows ) ) {
+				foreach ( $rows as $row ) {
+					$suffix = substr( $row->option_name, 31 );
+					$parts = explode( '_', $suffix );
+					if ( ! empty( $parts[0] ) && is_numeric( $parts[0] ) ) {
+						$cached_post_ids[ intval( $parts[0] ) ] = true;
+					}
+				}
+			}
+		}
+
 		if ( ! empty( $templates ) && ! empty( $post_ids ) ) {
 			foreach ( $templates as $tpl_id => $tpl ) {
 				$tpl_post_type = $tpl['post_type'] ?? '';
 				foreach ( $post_ids as $post_id ) {
 					$transient_key = "pishtop_rec_{$post_id}_{$tpl_id}_" . sanitize_key( $tpl_post_type );
 					$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $tpl_id, $tpl_post_type );
+					
+					if ( ! wp_using_ext_object_cache() && isset( $cached_post_ids[ $post_id ] ) ) {
+						continue;
+					}
+
 					if ( false === get_transient( $transient_key ) ) {
 						if ( $ranking_count >= $ranking_batch_size ) {
 							break 2;
