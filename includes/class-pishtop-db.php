@@ -154,6 +154,12 @@ class Database {
 			$params[] = $lang;
 		}
 
+		// WooCommerce hide out of stock items
+		if ( 'product' === $post_type && class_exists( 'WooCommerce' ) && 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+			$from  .= " JOIN {$wpdb->postmeta} pm_stock ON p.ID = pm_stock.post_id AND pm_stock.meta_key = '_stock_status'";
+			$where .= " AND pm_stock.meta_value != 'outofstock'";
+		}
+
 		// Priority/pre-filtering using taxonomy matching
 		if ( ! empty( $terms ) ) {
 			$term_list = implode( ',', array_map( 'intval', $terms ) );

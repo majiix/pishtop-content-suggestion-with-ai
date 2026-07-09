@@ -90,7 +90,7 @@
 /* Stats Cards Grid */
 .pishtop-stats-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 	gap: 24px;
 	margin-bottom: var(--space-layout);
 }
@@ -99,10 +99,11 @@
 	background: var(--bg-card);
 	border-radius: 16px;
 	border: 1px solid var(--border-color);
-	padding: 24px;
+	padding: 20px;
 	display: flex;
-	gap: 20px;
+	gap: 16px;
 	align-items: center;
+	justify-content: space-between;
 	transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.3s;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
@@ -114,9 +115,9 @@
 }
 
 .stat-icon-wrapper {
-	width: 56px;
-	height: 56px;
-	border-radius: 14px;
+	width: 48px;
+	height: 48px;
+	border-radius: 12px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -152,6 +153,12 @@
 }
 .orange-glow::after { border: 2px solid var(--accent); }
 
+.green-glow {
+	background: linear-gradient(135deg, #10b981 0%, #a7f3d0 100%);
+	box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+}
+.green-glow::after { border: 2px solid #10b981; }
+
 .stat-icon-wrapper svg {
 	position: relative;
 	z-index: 1;
@@ -163,43 +170,51 @@
 }
 
 .stat-content h3 {
-	margin: 0 0 6px 0;
-	font-size: 12px;
+	margin: 0 0 4px 0;
+	font-size: 10px;
 	font-weight: 700;
 	text-transform: uppercase;
-	letter-spacing: 1px;
+	letter-spacing: 0.5px;
 	color: var(--text-secondary);
 }
 
 .quota-value-row {
 	display: flex;
 	align-items: baseline;
-	gap: 6px;
-	margin-bottom: 12px;
+	gap: 4px;
+	margin-bottom: 2px;
 }
 
 .quota-current {
-	font-size: 28px;
+	font-size: 24px;
 	font-weight: 800;
 	font-family: 'Outfit', sans-serif;
 	color: var(--text-primary);
+	line-height: 1;
 }
 
 .quota-separator {
 	color: var(--text-muted);
-	font-size: 16px;
+	font-size: 14px;
 }
 
 .quota-limit {
 	color: var(--text-secondary);
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 600;
+}
+
+.stat-meta {
+	margin: 4px 0 0 0;
+	font-size: 11px;
+	color: var(--text-muted);
+	line-height: 1.3;
 }
 
 /* Circular Gauge */
 .circular-gauge-wrapper {
-	width: 56px;
-	height: 56px;
+	width: 48px;
+	height: 48px;
 	flex-shrink: 0;
 }
 
@@ -224,6 +239,8 @@
 
 .circular-chart.indigo-chart .circle { stroke: var(--primary); }
 .circular-chart.purple-chart .circle { stroke: var(--secondary); }
+.circular-chart.orange-chart .circle { stroke: var(--accent); }
+.circular-chart.green-chart .circle { stroke: #10b981; }
 
 .percentage-label {
 	fill: var(--text-primary);

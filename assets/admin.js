@@ -210,7 +210,7 @@ jQuery(document).ready(function($) {
 			showNotification('Please define a Template ID first.', 'error');
 			return;
 		}
-		var shortcode = '[pishtop_suggestions template="' + id + '"]';
+		var shortcode = '[pishtop_suggestions count="5" template="' + id + '"]';
 		
 		var $temp = $('<input>');
 		$('body').append($temp);

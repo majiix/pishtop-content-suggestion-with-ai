@@ -42,6 +42,14 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 * Staged cron worker execution enforcing fallback matching until vector database indexing is fully complete
 * Inline fallback cron runner executing background tasks on page loads if scheduled cron executions are overdue
 * Configurable ranking source fields choosing Title, Excerpt, and/or Content as prompt context for LLM re-ranking
+* Extensibility filters `pishtop_ai_post_text` for raw match text and `pishtop_ai_recommendations_transient_key` for recommendation cache keys
+* Dynamic WooCommerce session resolution overriding generic titles for Cart, Checkout, and Thank You pages with actual cart/order items
+* Dynamic user-isolated transient keys utilizing cart hashes and order IDs preventing cross-user cache leakage on WooCommerce pages
+* Frontend suggestions lazy loading utilizing Intersection Observer to trigger requests only when viewport visibility threshold is met
+* Dynamic count cache optimization fetching larger recommendation pools once and slicing dynamically to prevent redundant API hits for smaller count requests
+* Hybrid AI + Fallback recommendation engine filling count requests exceeding configured Max AI count settings with native fallback items, ensuring AI items stay on top with independent sorting
+* WooCommerce out-of-stock catalog visibility exclusion filtering dynamically in SQL candidates and fallback queries
+* Active Recommendations dashboard stats card displaying the count of posts with cached transient recommendations
 
 ## Verification Commands
 * standalone similarity and syntax check:

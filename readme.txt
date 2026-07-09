@@ -1,5 +1,5 @@
 === PishTop Content Suggestion with AI ===
-Contributors: pishtop
+Contributors: micromax2
 Tags: related posts, ai recommendations, vector embeddings, semantic search, openrouter
 Requires at least: 6.0
 Tested up to: 7.0
@@ -22,6 +22,10 @@ To achieve maximum precision, the plugin performs local similarity pre-filtering
 * **Cost-Control Quotas:** Separate daily limits block embedding and ranking operations once exceeded, automatically falling back to native category recommendations to prevent surprise API charges.
 * **Mutex Lock Stampede Protection:** Restricts concurrent API calls during content updates, protecting your budgets under traffic surges.
 * **Display Layout Templates:** Create custom wrapper and item markup with CSS stylesheets right inside the settings dashboard. Include WooCommerce price and custom metadata variables instantly.
+* **Dynamic WooCommerce Contexts:** Automatically overrides generic page titles on Cart, Checkout, and Thank You pages with active cart products and purchased items to yield relevant recommendations.
+* **User-Isolated Caching Keys:** Cache transients on WooCommerce pages vary dynamically using secure cart item hashes and order IDs, preventing cross-user caching leakage.
+* **Developer Extensibility Filters:** Hook into `pishtop_ai_post_text` to modify source text dynamically, and `pishtop_ai_recommendations_transient_key` to route custom transient cache partitions.
+* **Viewport Lazy Loading:** Trigger frontend AJAX suggestion loading via Intersection Observer, saving bandwidth and reducing API costs by querying only when the recommendations block becomes visible.
 * **Diagnostics Log Console:** Capped diagnostic log tables record API calls, errors, and system activity directly inside the admin panel.
 
 == Installation ==
@@ -29,18 +33,27 @@ To achieve maximum precision, the plugin performs local similarity pre-filtering
 1. Upload the plugin files to the `/wp-content/plugins/pishtop-content-suggestion-with-ai` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. Navigate to **Settings > AI Suggestions** to enter your OpenRouter API Key and configure your parameters.
-4. Use the shortcode `[pishtop_suggestions]` or the Gutenberg block to insert suggestions on your pages/posts.
+4. Use the shortcode `[pishtop_suggestions count="5"]` or the Gutenberg block to insert suggestions on your pages/posts.
 
 == Frequently Asked Questions ==
 
 = How do I display suggestions? =
-You can insert suggestions using the shortcode `[pishtop_suggestions]` or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
+You can insert suggestions using the shortcode `[pishtop_suggestions count="5"]` or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
 
 = What API models does it support? =
 The plugin automatically pulls all available embedding and chat models from the OpenRouter API. You can choose any supported model (e.g., Google Gemini, OpenAI GPT, Cohere) in the Matching Engine settings tab.
 
 = How do cost budgets work? =
 You can set daily quota limits for both embedding generation and LLM re-ranking. Once a limit is reached, the plugin will seamlessly fall back to native WordPress matching to prevent any additional charges.
+
+= Does it support WooCommerce pages? =
+Yes! When used inside WooCommerce Cart, Checkout, or Order Received (Thank You) pages, the plugin dynamically extracts active cart products or purchased order items to match suggestions, rather than using generic page titles.
+
+= How does it handle caching on WooCommerce pages? =
+To prevent user cache cross-leakage, the caching transient keys are dynamically partitioned per customer session using MD5 hashes of cart items and order IDs.
+
+= How can developers customize the matching text or cache keys? =
+The plugin provides two filters: `pishtop_ai_post_text` (filters post source text before embedding) and `pishtop_ai_recommendations_transient_key` (filters cache keys).
 
 == Changelog ==
 

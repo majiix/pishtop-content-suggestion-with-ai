@@ -1,0 +1,954 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Project-Id-Version: PishTop Content Suggestion with AI\n"
+"POT-Creation-Date: 2026-07-09 12:35+0330\n"
+"PO-Revision-Date: 2026-07-09 12:35+0330\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: pishtop-content-suggestion-with-ai.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.js\n"
+
+#: includes/class-pishtop-admin.php:39 views/admin-settings-view.php:11
+msgid "PishTop Content Suggestions"
+msgstr ""
+
+#: includes/class-pishtop-admin.php:40
+msgid "AI Suggestions"
+msgstr ""
+
+#: includes/class-pishtop-admin.php:59
+msgid "Are you sure you want to proceed?"
+msgstr ""
+
+#: includes/class-pishtop-admin.php:201
+msgid "Templates updated successfully."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:273 includes/class-pishtop-admin.php:276
+#: includes/class-pishtop-admin.php:292 includes/class-pishtop-admin.php:295
+#: includes/class-pishtop-admin.php:313 includes/class-pishtop-admin.php:316
+#: includes/class-pishtop-admin.php:325 includes/class-pishtop-admin.php:328
+#: includes/class-pishtop-admin.php:382 includes/class-pishtop-admin.php:385
+#: includes/class-pishtop-admin.php:399 includes/class-pishtop-admin.php:402
+#: includes/class-pishtop-admin.php:419 includes/class-pishtop-admin.php:422
+msgid "Unauthorized action."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:287
+msgid "Recommendation caches cleared."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:308
+msgid "Embeddings database cleared."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:320
+msgid "Diagnostics logs cleared."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:344
+msgid "No logs found."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:352
+msgid "View Context"
+msgstr ""
+
+#: includes/class-pishtop-admin.php:414
+msgid "Settings saved successfully."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:428
+msgid "No templates data received."
+msgstr ""
+
+#: includes/class-pishtop-admin.php:447
+msgid "Templates saved successfully."
+msgstr ""
+
+#. translators: %d: number of minutes
+#: includes/class-pishtop-cron.php:205
+#, php-format
+msgid "Every %d Minutes"
+msgstr ""
+
+#: views/admin-settings-view.php:14
+msgid ""
+"Next-generation semantic recommendations powered by local vector similarity "
+"& OpenRouter AI."
+msgstr ""
+
+#: views/admin-settings-view.php:24
+msgid "Embedding API Quota"
+msgstr ""
+
+#: views/admin-settings-view.php:30
+msgid "Requests executed today"
+msgstr ""
+
+#: views/admin-settings-view.php:50
+msgid "LLM Re-ranking Quota"
+msgstr ""
+
+#: views/admin-settings-view.php:56
+msgid "Recommendations ranked today"
+msgstr ""
+
+#: views/admin-settings-view.php:76
+msgid "Index Status"
+msgstr ""
+
+#. translators: %d: number of unindexed posts
+#: views/admin-settings-view.php:87
+#, php-format
+msgid "%d Pending"
+msgstr ""
+
+#: views/admin-settings-view.php:93
+msgid "Fully Indexed"
+msgstr ""
+
+#: views/admin-settings-view.php:97
+msgid "Local vector embeddings generated"
+msgstr ""
+
+#: views/admin-settings-view.php:104
+msgid "General Settings"
+msgstr ""
+
+#: views/admin-settings-view.php:105
+msgid "Matching Engine"
+msgstr ""
+
+#: views/admin-settings-view.php:106
+msgid "Quota & Security"
+msgstr ""
+
+#: views/admin-settings-view.php:107
+msgid "Display Templates"
+msgstr ""
+
+#: views/admin-settings-view.php:108
+msgid "Diagnostics & Logs"
+msgstr ""
+
+#: views/admin-settings-view.php:109 views/admin-settings-view.php:721
+msgid "Help & Documentation"
+msgstr ""
+
+#: views/admin-settings-view.php:119
+msgid "OpenRouter Integration"
+msgstr ""
+
+#: views/admin-settings-view.php:121
+msgid "OpenRouter API Key"
+msgstr ""
+
+#: views/admin-settings-view.php:124
+msgid "Enter your OpenRouter secret key. Obtain one from openrouter.ai."
+msgstr ""
+
+#: views/admin-settings-view.php:129
+msgid "Cache Expiry (TTL)"
+msgstr ""
+
+#: views/admin-settings-view.php:134
+msgid "Hours"
+msgstr ""
+
+#: views/admin-settings-view.php:135 views/admin-settings-view.php:570
+msgid "Days"
+msgstr ""
+
+#: views/admin-settings-view.php:138
+msgid ""
+"Duration recommendation matching results remain cached in transient database "
+"records."
+msgstr ""
+
+#: views/admin-settings-view.php:143
+msgid "Default Fallback"
+msgstr ""
+
+#: views/admin-settings-view.php:146
+msgid "Native Category/Tag matching"
+msgstr ""
+
+#: views/admin-settings-view.php:147
+msgid "Recent posts from same post type"
+msgstr ""
+
+#: views/admin-settings-view.php:148
+msgid "Hide suggestion output entirely"
+msgstr ""
+
+#: views/admin-settings-view.php:150
+msgid ""
+"What to output when OpenRouter API is unreachable or daily quota runs out."
+msgstr ""
+
+#: views/admin-settings-view.php:155
+msgid "Final Output Sorting"
+msgstr ""
+
+#: views/admin-settings-view.php:158
+msgid "AI Similarity Score (Default)"
+msgstr ""
+
+#: views/admin-settings-view.php:159
+msgid "Publish Date (Newest First)"
+msgstr ""
+
+#: views/admin-settings-view.php:160
+msgid "Publish Date (Oldest First)"
+msgstr ""
+
+#: views/admin-settings-view.php:161
+msgid "Alphabetical (Title A-Z)"
+msgstr ""
+
+#: views/admin-settings-view.php:162
+msgid "Random Order"
+msgstr ""
+
+#: views/admin-settings-view.php:164
+msgid ""
+"How the suggested related posts should be ordered in the final output "
+"display."
+msgstr ""
+
+#: views/admin-settings-view.php:169
+msgid "Maintenance Actions"
+msgstr ""
+
+#: views/admin-settings-view.php:173
+msgid "Clear Recommendation Caches"
+msgstr ""
+
+#: views/admin-settings-view.php:177
+msgid "Clear Embeddings Cache"
+msgstr ""
+
+#: views/admin-settings-view.php:184
+msgid "Display & Thumbnail Settings"
+msgstr ""
+
+#: views/admin-settings-view.php:186
+msgid "Default Fallback Image URL"
+msgstr ""
+
+#: views/admin-settings-view.php:190
+msgid "Select Image"
+msgstr ""
+
+#: views/admin-settings-view.php:192
+msgid ""
+"Fallback placeholder image URL used for post recommendations that do not "
+"have a featured image."
+msgstr ""
+
+#: views/admin-settings-view.php:197
+msgid "Default Thumbnail Size"
+msgstr ""
+
+#: views/admin-settings-view.php:209
+msgid ""
+"Image size used to retrieve featured image for {{image_url}} placeholder "
+"template layout."
+msgstr ""
+
+#: views/admin-settings-view.php:215 views/admin-settings-view.php:361
+#: views/admin-settings-view.php:485 views/admin-settings-view.php:618
+msgid "Save Settings"
+msgstr ""
+
+#: views/admin-settings-view.php:222
+msgid "AI & Similarity Models"
+msgstr ""
+
+#: views/admin-settings-view.php:224
+msgid "Embedding Model"
+msgstr ""
+
+#: views/admin-settings-view.php:230
+msgid "Warning: Changing the Embedding Model"
+msgstr ""
+
+#: views/admin-settings-view.php:232
+msgid ""
+"Changing the embedding model requires recalculating vectors for all posts. "
+"Recommendations will fall back to default native sorting until the "
+"background embedding worker finishes indexing the entire database."
+msgstr ""
+
+#: views/admin-settings-view.php:235
+msgid ""
+"Changes in embedding model discard old local vectors, triggering database-"
+"wide auto-regeneration."
+msgstr ""
+
+#: views/admin-settings-view.php:241
+msgid "Embedding Source Fields"
+msgstr ""
+
+#: views/admin-settings-view.php:246 views/admin-settings-view.php:267
+msgid "Post Title"
+msgstr ""
+
+#: views/admin-settings-view.php:247 views/admin-settings-view.php:268
+msgid "Post Excerpt"
+msgstr ""
+
+#: views/admin-settings-view.php:248 views/admin-settings-view.php:269
+msgid "Full Content"
+msgstr ""
+
+#: views/admin-settings-view.php:249
+msgid "Taxonomies (Categories/Tags)"
+msgstr ""
+
+#: views/admin-settings-view.php:250
+msgid "Public Custom Fields"
+msgstr ""
+
+#: views/admin-settings-view.php:257
+msgid ""
+"Concatenated fields used to construct the text representation before "
+"embedding generation."
+msgstr ""
+
+#: views/admin-settings-view.php:262
+msgid "Ranking Source Fields"
+msgstr ""
+
+#: views/admin-settings-view.php:276
+msgid ""
+"Fields sent as context to the OpenRouter re-ranking LLM for candidate "
+"selection."
+msgstr ""
+
+#: views/admin-settings-view.php:281
+msgid "Indexed Post Types"
+msgstr ""
+
+#: views/admin-settings-view.php:294
+msgid "Select which public post types to analyze and suggest content for."
+msgstr ""
+
+#: views/admin-settings-view.php:299
+msgid "LLM Re-ranking Model"
+msgstr ""
+
+#: views/admin-settings-view.php:304
+msgid ""
+"Large Language Model used to evaluate and sort the final recommendations "
+"pool. More advanced models yield better suggestions but cost more."
+msgstr ""
+
+#: views/admin-settings-view.php:309
+msgid "LLM Temperature"
+msgstr ""
+
+#: views/admin-settings-view.php:312
+msgid ""
+"Controls randomness of the ranking model (0.0 for completely deterministic, "
+"higher values for more variety). Recommended: 0.1."
+msgstr ""
+
+#: views/admin-settings-view.php:317
+msgid "Max Pre-filtered Candidates"
+msgstr ""
+
+#: views/admin-settings-view.php:320
+msgid ""
+"SQL candidate database record limits before loaded into PHP memory for "
+"cosine similarity search (Default: 500). Prevents RAM bloat."
+msgstr ""
+
+#: views/admin-settings-view.php:325
+msgid "Similarity Candidate Count"
+msgstr ""
+
+#: views/admin-settings-view.php:328
+msgid ""
+"Number of top cosine similarity matches sent to the LLM for final re-ranking "
+"(Default: 50)."
+msgstr ""
+
+#: views/admin-settings-view.php:333
+msgid "Max Recommendation Count"
+msgstr ""
+
+#: views/admin-settings-view.php:336
+msgid "Default suggestion outputs returned per shortcode rendering."
+msgstr ""
+
+#: views/admin-settings-view.php:341
+msgid "Custom Re-rank Prompt Instructions"
+msgstr ""
+
+#: views/admin-settings-view.php:354
+msgid ""
+"Use {{count}} placeholder to dynamically pass the recommendation limit size "
+"to the LLM system prompt."
+msgstr ""
+
+#: views/admin-settings-view.php:355
+msgid "Reset to Default"
+msgstr ""
+
+#: views/admin-settings-view.php:368
+msgid "API Cost Controls & Quotas"
+msgstr ""
+
+#: views/admin-settings-view.php:370
+msgid "Daily Embedding Quota"
+msgstr ""
+
+#: views/admin-settings-view.php:373
+msgid ""
+"Maximum embedding generations allowed per day (0 for unlimited). Prevents "
+"surprise API costs on site edits."
+msgstr ""
+
+#: views/admin-settings-view.php:378
+msgid "Daily Re-ranking Quota"
+msgstr ""
+
+#: views/admin-settings-view.php:381
+msgid ""
+"Maximum LLM Chat Completion re-ranking requests allowed per day (0 for "
+"unlimited)."
+msgstr ""
+
+#: views/admin-settings-view.php:386
+msgid "Mutex Lock Duration"
+msgstr ""
+
+#: views/admin-settings-view.php:390 views/admin-settings-view.php:401
+#: views/admin-settings-view.php:424
+msgid "Seconds"
+msgstr ""
+
+#: views/admin-settings-view.php:392
+msgid ""
+"Time-to-live lock duration preventing concurrent API calls during content "
+"updates. Bypassed visitors default to native matches."
+msgstr ""
+
+#: views/admin-settings-view.php:397
+msgid "Background Indexing Delay"
+msgstr ""
+
+#: views/admin-settings-view.php:403
+msgid ""
+"How long the background cron queue worker delays embedding generation after "
+"a post is saved/updated."
+msgstr ""
+
+#: views/admin-settings-view.php:408
+msgid "Maintenance Cron Schedule"
+msgstr ""
+
+#: views/admin-settings-view.php:411
+msgid "Daily (Standard)"
+msgstr ""
+
+#: views/admin-settings-view.php:412
+msgid "Twice Daily"
+msgstr ""
+
+#: views/admin-settings-view.php:413
+msgid "Weekly"
+msgstr ""
+
+#: views/admin-settings-view.php:415
+msgid ""
+"How frequently WP-Cron triggers maintenance, log pruning, and daily API "
+"usage budget reset."
+msgstr ""
+
+#: views/admin-settings-view.php:420
+msgid "API Request Timeout"
+msgstr ""
+
+#: views/admin-settings-view.php:426
+msgid ""
+"Maximum time to wait for OpenRouter API responses before failing or falling "
+"back."
+msgstr ""
+
+#: views/admin-settings-view.php:432
+msgid "WP-Cron Workers Settings"
+msgstr ""
+
+#: views/admin-settings-view.php:434
+msgid "Background Embedding Worker"
+msgstr ""
+
+#: views/admin-settings-view.php:440
+msgid ""
+"Automatically generate post vector embeddings in the background using the "
+"periodic cron worker."
+msgstr ""
+
+#: views/admin-settings-view.php:445
+msgid "Background Ranking Worker"
+msgstr ""
+
+#: views/admin-settings-view.php:451
+msgid ""
+"Pre-calculate and cache suggestions in the background to ensure fast page "
+"loads for visitors."
+msgstr ""
+
+#: views/admin-settings-view.php:456
+msgid "Cron Run Interval"
+msgstr ""
+
+#: views/admin-settings-view.php:460
+msgid "Minutes"
+msgstr ""
+
+#: views/admin-settings-view.php:462
+msgid "Time interval range between background worker runs."
+msgstr ""
+
+#: views/admin-settings-view.php:467
+msgid "Embedding Batch Size"
+msgstr ""
+
+#: views/admin-settings-view.php:470
+msgid ""
+"Maximum number of posts to generate embeddings for in a single cron run "
+"interval."
+msgstr ""
+
+#: views/admin-settings-view.php:475
+msgid "Ranking Batch Size"
+msgstr ""
+
+#: views/admin-settings-view.php:478
+msgid ""
+"Maximum number of posts to pre-calculate recommendations for in a single "
+"cron run interval."
+msgstr ""
+
+#: views/admin-settings-view.php:493
+msgid "Diagnostics Log Console"
+msgstr ""
+
+#: views/admin-settings-view.php:497
+msgid "Refresh Logs"
+msgstr ""
+
+#: views/admin-settings-view.php:501
+msgid "Clear All Logs"
+msgstr ""
+
+#: views/admin-settings-view.php:508
+msgid "Log Level"
+msgstr ""
+
+#: views/admin-settings-view.php:510
+msgid "All Levels"
+msgstr ""
+
+#: views/admin-settings-view.php:511
+msgid "INFO"
+msgstr ""
+
+#: views/admin-settings-view.php:512
+msgid "DEBUG"
+msgstr ""
+
+#: views/admin-settings-view.php:513
+msgid "WARNING"
+msgstr ""
+
+#: views/admin-settings-view.php:514
+msgid "ERROR"
+msgstr ""
+
+#: views/admin-settings-view.php:518
+msgid "Search keyword"
+msgstr ""
+
+#: views/admin-settings-view.php:519
+msgid "Search message..."
+msgstr ""
+
+#: views/admin-settings-view.php:526
+msgid "Time (UTC)"
+msgstr ""
+
+#: views/admin-settings-view.php:527
+msgid "Level"
+msgstr ""
+
+#: views/admin-settings-view.php:528
+msgid "Message"
+msgstr ""
+
+#: views/admin-settings-view.php:529
+msgid "Context Data"
+msgstr ""
+
+#: views/admin-settings-view.php:538
+msgid "« Previous"
+msgstr ""
+
+#: views/admin-settings-view.php:540
+msgid "Page"
+msgstr ""
+
+#: views/admin-settings-view.php:540
+msgid "of"
+msgstr ""
+
+#: views/admin-settings-view.php:542
+msgid "Next »"
+msgstr ""
+
+#: views/admin-settings-view.php:548
+msgid "Logging & Diagnostics Controls"
+msgstr ""
+
+#: views/admin-settings-view.php:550
+msgid "Enable Diagnostics Logging"
+msgstr ""
+
+#. translators: %s: max log rows
+#: views/admin-settings-view.php:559
+#, php-format
+msgid "Write request and error logs in database (capped at %s rows)."
+msgstr ""
+
+#: views/admin-settings-view.php:566
+msgid "Log Retention Period"
+msgstr ""
+
+#: views/admin-settings-view.php:572
+msgid ""
+"Number of days to keep diagnostics events logs. Cleanups run daily via WP-"
+"Cron."
+msgstr ""
+
+#: views/admin-settings-view.php:577
+msgid "Log Row Capacity Limit"
+msgstr ""
+
+#: views/admin-settings-view.php:580
+msgid ""
+"Maximum number of diagnostic log entries to retain. Older logs are pruned to "
+"avoid database bloat."
+msgstr ""
+
+#: views/admin-settings-view.php:585
+msgid "Log Cleanup Buffer Ratio"
+msgstr ""
+
+#: views/admin-settings-view.php:591
+msgid ""
+"Percentage of log row limit at which early log database truncation runs to "
+"prevent frequent database writes. Recommended: 90%."
+msgstr ""
+
+#: views/admin-settings-view.php:596
+msgid "Logs Table Page Size"
+msgstr ""
+
+#: views/admin-settings-view.php:599
+msgid "Number of log rows to display per page in the Diagnostics tab."
+msgstr ""
+
+#: views/admin-settings-view.php:604
+msgid "Danger Zone: Delete Data on Uninstall"
+msgstr ""
+
+#: views/admin-settings-view.php:611
+msgid ""
+"WARNING: If enabled, all custom database tables, vector embeddings, activity "
+"logs, and settings configuration will be permanently deleted when this "
+"plugin is deleted/uninstalled."
+msgstr ""
+
+#: views/admin-settings-view.php:629
+msgid "Layout & Repeater Templates"
+msgstr ""
+
+#: views/admin-settings-view.php:631
+msgid ""
+"Templates are invoked via shortcode [pishtop_suggestions template="
+"\"template_id\"]."
+msgstr ""
+
+#: views/admin-settings-view.php:632
+msgid "Placeholders:"
+msgstr ""
+
+#: views/admin-settings-view.php:644 views/admin-settings-view.php:814
+msgid "Template ID:"
+msgstr ""
+
+#: views/admin-settings-view.php:649 views/admin-settings-view.php:819
+msgid "Copy Shortcode"
+msgstr ""
+
+#: views/admin-settings-view.php:652
+msgid "Expand"
+msgstr ""
+
+#: views/admin-settings-view.php:655 views/admin-settings-view.php:825
+msgid "Delete"
+msgstr ""
+
+#: views/admin-settings-view.php:663 views/admin-settings-view.php:833
+msgid "Template ID / Handle"
+msgstr ""
+
+#: views/admin-settings-view.php:667 views/admin-settings-view.php:837
+msgid "Target Post Type Filter"
+msgstr ""
+
+#: views/admin-settings-view.php:669 views/admin-settings-view.php:839
+msgid "- Current Post Type -"
+msgstr ""
+
+#: views/admin-settings-view.php:683 views/admin-settings-view.php:852
+msgid "Wrapper HTML (contains {{items}})"
+msgstr ""
+
+#: views/admin-settings-view.php:687 views/admin-settings-view.php:856
+msgid "Item HTML"
+msgstr ""
+
+#: views/admin-settings-view.php:692 views/admin-settings-view.php:861
+msgid "Custom CSS (Injected on Load)"
+msgstr ""
+
+#: views/admin-settings-view.php:705
+msgid "Add New Template"
+msgstr ""
+
+#: views/admin-settings-view.php:711
+msgid "Save Templates"
+msgstr ""
+
+#: views/admin-settings-view.php:725
+msgid "Shortcode Usage"
+msgstr ""
+
+#: views/admin-settings-view.php:726
+msgid ""
+"Use the shortcode anywhere on posts or pages to render related suggestions. "
+"Recommended to insert in template files or via editors."
+msgstr ""
+
+#: views/admin-settings-view.php:728
+msgid "Attributes:"
+msgstr ""
+
+#: views/admin-settings-view.php:730
+msgid "Max items to display (default is settings value)."
+msgstr ""
+
+#: views/admin-settings-view.php:731
+msgid "Template ID/handle defined under Display Templates (e.g. default_list)."
+msgstr ""
+
+#: views/admin-settings-view.php:732
+msgid ""
+"Optionally retrieve related items for a specific post instead of the current "
+"loop post."
+msgstr ""
+
+#: views/admin-settings-view.php:737
+msgid "Templates System Placeholders"
+msgstr ""
+
+#: views/admin-settings-view.php:738
+msgid ""
+"Design custom repeater lists and layout rows. Placeholders are dynamically "
+"interpolated during shortcode render:"
+msgstr ""
+
+#: views/admin-settings-view.php:741
+msgid "Post or product title"
+msgstr ""
+
+#: views/admin-settings-view.php:742
+msgid "URL redirecting to the post"
+msgstr ""
+
+#: views/admin-settings-view.php:743
+msgid "Featured image source (uses placeholder if none)"
+msgstr ""
+
+#: views/admin-settings-view.php:744
+msgid "Short summary description of content"
+msgstr ""
+
+#: views/admin-settings-view.php:745
+msgid "Date of publication"
+msgstr ""
+
+#: views/admin-settings-view.php:746
+msgid "Fetches custom postmeta key value"
+msgstr ""
+
+#: views/admin-settings-view.php:747
+msgid "WooCommerce formatted numeric field"
+msgstr ""
+
+#: views/admin-settings-view.php:757
+msgid "Matching & Re-ranking Mechanism"
+msgstr ""
+
+#: views/admin-settings-view.php:758
+msgid "Step 1: Database Pre-filtering"
+msgstr ""
+
+#: views/admin-settings-view.php:759
+msgid ""
+"Plugin queries the database to find candidate matching posts. Candidates are "
+"pre-filtered by post type, taxonomies (categories/tags), and WPML/Polylang "
+"languages first to prevent slow database queries."
+msgstr ""
+
+#: views/admin-settings-view.php:761
+msgid "Step 2: Cosine Similarity"
+msgstr ""
+
+#: views/admin-settings-view.php:762
+msgid ""
+"PHP calculates mathematical cosine similarity between the current post's "
+"text embedding vector and all candidates vectors. The top matches (e.g. 50 "
+"items) are kept."
+msgstr ""
+
+#: views/admin-settings-view.php:764
+msgid "Step 3: LLM Re-ranking"
+msgstr ""
+
+#: views/admin-settings-view.php:765
+msgid ""
+"The top similar candidates are sent to the selected OpenRouter Chat LLM "
+"along with instructions. The LLM evaluates context relevance and ranks the "
+"best results."
+msgstr ""
+
+#: views/admin-settings-view.php:769
+msgid "API Quotas & Mutex Caching"
+msgstr ""
+
+#: views/admin-settings-view.php:770
+msgid "Daily Limits & Costs Control"
+msgstr ""
+
+#: views/admin-settings-view.php:771
+msgid ""
+"To prevent surprise bills, separate daily limits block API operations once "
+"exceeded, automatically falling back to native category recommendation "
+"matching. Quotas reset at midnight based on local WordPress timezone "
+"settings."
+msgstr ""
+
+#: views/admin-settings-view.php:773
+msgid "Mutex Lock (Cache Stampede Protection)"
+msgstr ""
+
+#: views/admin-settings-view.php:774
+msgid ""
+"During cache expiration, if multiple concurrent requests hit the same post, "
+"only the first request makes an external API call to OpenRouter. Subsequent "
+"concurrent requests immediately receive a native category fallback list "
+"rather than blocking execution or making duplicate costly API calls. Lock "
+"expires after 60 seconds."
+msgstr ""
+
+#: views/admin-settings-view.php:778
+msgid "WooCommerce Support & Filters"
+msgstr ""
+
+#: views/admin-settings-view.php:779
+msgid "Dynamic WooCommerce Pages"
+msgstr ""
+
+#: views/admin-settings-view.php:780
+msgid ""
+"When rendering recommendations on WooCommerce Cart, Checkout, or Order "
+"Received (Thank You) pages, the plugin automatically overrides generic page "
+"titles/descriptions with products from the active customer's cart or order "
+"details."
+msgstr ""
+
+#: views/admin-settings-view.php:782
+msgid "Cache Isolation & Security"
+msgstr ""
+
+#: views/admin-settings-view.php:783
+msgid ""
+"Recommendation caching keys are partitioned using secure MD5 cart item "
+"hashes and order IDs. This prevents different users from seeing each other's "
+"cached product recommendations on WooCommerce pages."
+msgstr ""
+
+#: views/admin-settings-view.php:785
+msgid "Developer Filter Hooks"
+msgstr ""
+
+#: views/admin-settings-view.php:786
+msgid "Customize matching texts and cache keys via standard WordPress filters:"
+msgstr ""
+
+#: views/admin-settings-view.php:787
+msgid "Filter raw content source text prior to generating embedding vectors."
+msgstr ""
+
+#: views/admin-settings-view.php:788
+msgid "Filter the transient caching key for custom routing."
+msgstr ""
+
+#: views/admin-settings-view.php:799
+msgid "Context Payload Details"
+msgstr ""
+
+#: views/admin-settings-view.php:815
+msgid "(New Template)"
+msgstr ""
+
+#: views/admin-settings-view.php:822
+msgid "Collapse"
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "PishTop Content Suggestion with AI"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://wordpress.org/plugins/pishtop-content-suggestion-with-ai"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid ""
+"AI-powered related post recommendations using OpenRouter.ai and local vector "
+"embeddings."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "micromax"
+msgstr ""

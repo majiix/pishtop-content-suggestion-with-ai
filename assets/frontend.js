@@ -1,6 +1,5 @@
 jQuery(document).ready(function($) {
-	$('.pishtop-suggestions-container').each(function() {
-		var $container = $(this);
+	var loadSuggestions = function($container) {
 		var data = {
 			action: 'pishtop_get_suggestions',
 			post_id: $container.data('post-id'),
@@ -19,5 +18,27 @@ jQuery(document).ready(function($) {
 		}).fail(function() {
 			$container.fadeOut();
 		});
-	});
+	};
+
+	if ('IntersectionObserver' in window) {
+		var observer = new IntersectionObserver(function(entries, observer) {
+			entries.forEach(function(entry) {
+				if (entry.isIntersecting) {
+					var $container = $(entry.target);
+					loadSuggestions($container);
+					observer.unobserve(entry.target);
+				}
+			});
+		}, {
+			rootMargin: '100px'
+		});
+
+		$('.pishtop-suggestions-container').each(function() {
+			observer.observe(this);
+		});
+	} else {
+		$('.pishtop-suggestions-container').each(function() {
+			loadSuggestions($(this));
+		});
+	}
 });

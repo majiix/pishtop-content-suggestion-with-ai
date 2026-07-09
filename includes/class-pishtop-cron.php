@@ -317,6 +317,7 @@ class Cron {
 				$tpl_post_type = $tpl['post_type'] ?? '';
 				foreach ( $post_ids as $post_id ) {
 					$transient_key = "pishtop_rec_{$post_id}_{$tpl_id}_" . sanitize_key( $tpl_post_type );
+					$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $tpl_id, $tpl_post_type );
 					if ( false === get_transient( $transient_key ) ) {
 						if ( $ranking_count >= $ranking_batch_size ) {
 							break 2;

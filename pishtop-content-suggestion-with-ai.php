@@ -1,14 +1,16 @@
 <?php
 /**
  * Plugin Name: PishTop Content Suggestion with AI
- * Plugin URI:  https://github.com/pishtop/pishtop-content-suggestion-with-ai
+ * Plugin URI:  https://wordpress.org/plugins/pishtop-content-suggestion-with-ai
  * Description: AI-powered related post recommendations using OpenRouter.ai and local vector embeddings.
  * Version:     1.0.0
- * Author:      PishTop
+ * Author:      micromax
  * License:     GPL2
  * Text Domain: pishtop-content-suggestion-with-ai
  * Requires PHP: 7.4
- * Requires Plugins: 
+ * Domain Path: /languages
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

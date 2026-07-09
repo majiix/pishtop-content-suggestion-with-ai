@@ -78,6 +78,21 @@ end
 ### Multilingual Support (WPML & Polylang)
 * **Isolation:** Automatic integration with WPML (`wpml_element_language_details`) and Polylang (`pll_get_post_language`) to isolate content searches by language. Candidates are filtered at the database level by the current post's language before similarity matching.
 
+### WooCommerce Dynamic Sessions & Cache Isolation
+* **Dynamic Content Extraction:** When recommendations are triggered on WooCommerce Cart, Checkout, or Order Received (Thank You) pages, the plugin bypasses the page's generic title and static text. It dynamically queries the customer's active session cart items (via `WC()->cart->get_cart()`) or order items (via referrer-parsed or global query-var order IDs matching `wc_get_order()`) and utilizes these product titles to build the match text.
+* **Leakage-Proof Cache Partitioning:** To secure user session separation, the transient keys generated for WooCommerce endpoints append a customer-isolated hash. For Cart and Checkout, the key includes a sorted MD5 checksum of the cart items and their quantities. For the thank-you screen, the key integrates the specific order ID. This prevents cached recommendations from leaking across different user accounts.
+
+### Developer Hook Extensibility
+* **`pishtop_ai_post_text` Filter:** Allows developers to filter and override the raw consolidated text context of any post before it gets passed to the OpenRouter embedding API.
+  - Arguments: `(string) $text`, `(int) $post_id`
+* **`pishtop_ai_recommendations_transient_key` Filter:** Allows filtering the cache key name before transients are written or read, providing deep control over recommendation cache segmenting.
+  - Arguments: `(string) $transient_key`, `(int) $post_id`, `(string) $template_id`, `(string) $post_type`
+
+### Viewport Lazy Loading (Intersection Observer)
+* **Optimization Strategy:** To minimize bandwidth consumption and control API costs, recommendations are loaded lazily. Instead of triggering AJAX queries immediately upon DOM load, the frontend script enqueues the DOM element under an `IntersectionObserver`.
+* **Trigger Threshold:** The observer is configured with a `rootMargin: '100px'`, triggering the AJAX callback slightly before the element scrolls into view. Once loaded, the observer unobserves the target element.
+* **Legacy Fallback:** If `IntersectionObserver` is not supported by the browser, the script falls back to executing the load query immediately on document ready.
+
 ---
 
 ## 3. Dynamic Template System

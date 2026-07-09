@@ -231,6 +231,27 @@ Rules:
 		}
 		$unindexed_posts = max( 0, $total_posts - $indexed_posts );
 
+		// Fetch count of distinct posts having cached rankings
+		$ranked_posts_count = wp_cache_get( 'pishtop_ranked_posts_count', 'pishtop_posts' );
+		if ( false === $ranked_posts_count ) {
+			$prefix = '_transient_pishtop_rec_';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $prefix . '%' ) );
+			
+			$post_ids = [];
+			if ( is_array( $options ) ) {
+				foreach ( $options as $opt_name ) {
+					$suffix = substr( $opt_name, strlen( $prefix ) );
+					$parts = explode( '_', $suffix );
+					if ( ! empty( $parts[0] ) && is_numeric( $parts[0] ) ) {
+						$post_ids[] = intval( $parts[0] );
+					}
+				}
+			}
+			$ranked_posts_count = count( array_unique( $post_ids ) );
+			wp_cache_set( 'pishtop_ranked_posts_count', $ranked_posts_count, 'pishtop_posts', 60 );
+		}
+
 		// Load template markup
 		include PISHTOP_AI_PATH . 'views/admin-settings-view.php';
 	}

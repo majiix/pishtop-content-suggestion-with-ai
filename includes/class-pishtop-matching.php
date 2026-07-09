@@ -42,47 +42,71 @@ class Matching {
 		$cache_ttl_unit = isset( $settings['cache_ttl_unit'] ) ? $settings['cache_ttl_unit'] : 'hours';
 		$cache_ttl = ( 'days' === $cache_ttl_unit ) ? $cache_ttl_val * DAY_IN_SECONDS : $cache_ttl_val * HOUR_IN_SECONDS;
 
-		$transient_key = "pishtop_rec_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
-		$cached_ids    = get_transient( $transient_key );
+		// 1. Determine AI cap from settings
+		$max_ai_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
+		$max_ai_count = max( 1, $max_ai_count );
 
-		if ( false !== $cached_ids ) {
-			return is_array( $cached_ids ) ? $cached_ids : [];
+		$ai_count = min( $count, $max_ai_count );
+		$fallback_count = $count - $ai_count;
+
+		// 2. Fetch AI suggestions (either from cache or by querying API)
+		$ai_ids = [];
+		if ( $ai_count > 0 ) {
+			$transient_key = "pishtop_rec_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
+			$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $template_id, $post_type );
+			$cached_ids    = get_transient( $transient_key );
+
+			// Check if cache has enough items for our AI count (at least $ai_count)
+			if ( false !== $cached_ids && is_array( $cached_ids ) && count( $cached_ids ) >= $ai_count ) {
+				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
+			} else {
+				// Cache miss or not enough items for the required AI count.
+				// We query the API for the maximum allowed AI recommendations ($max_ai_count) so we fully populate the cache.
+				if ( self::has_unindexed_posts() ) {
+					\pishtop_log( 'INFO', "Indexing in progress. Returning native fallback for post {$post_id}." );
+					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+				} else {
+					// Mutex Cache Stampede Protection
+					$lock_key = "pishtop_lock_{$post_id}";
+					$is_locked = get_transient( $lock_key );
+
+					if ( $is_locked ) {
+						\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
+						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+					} else {
+						// Acquire Lock
+						$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
+						set_transient( $lock_key, true, $lock_ttl );
+
+						// Fetch $max_ai_count posts from AI
+						$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
+
+						// Release Lock
+						delete_transient( $lock_key );
+
+						if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
+							set_transient( $transient_key, $api_ids, $cache_ttl );
+							$ai_ids = array_slice( $api_ids, 0, $ai_count );
+						} else {
+							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+						}
+					}
+				}
+			}
 		}
 
-		// Staged execution check: bypass LLM ranking and use native fallback if unindexed posts exist
-		if ( self::has_unindexed_posts() ) {
-			\pishtop_log( 'INFO', "Indexing in progress. Returning native fallback for post {$post_id}." );
-			return self::get_native_fallback( $post_id, $count, $post_type );
+		// 3. Fetch fallback suggestions if requested count exceeds AI cap
+		$fallback_ids = [];
+		if ( $fallback_count > 0 ) {
+			// Exclude the current post ID and all IDs already recommended by AI
+			$fallback_ids = self::get_native_fallback( $post_id, $fallback_count, $post_type, $ai_ids );
 		}
 
-		// Mutex Cache Stampede Protection
-		$lock_key = "pishtop_lock_{$post_id}";
-		$is_locked = get_transient( $lock_key );
+		// 4. Sort each group independently to keep AI recommendations on top
+		$sorted_ai_ids       = self::apply_final_sorting( $ai_ids );
+		$sorted_fallback_ids = self::apply_final_sorting( $fallback_ids );
 
-		if ( $is_locked ) {
-			// Return native fallback immediately
-			\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
-			return self::get_native_fallback( $post_id, $count, $post_type );
-		}
-
-		// Acquire Mutex Lock (dynamic TTL from settings)
-		$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
-		set_transient( $lock_key, true, $lock_ttl );
-
-		// Run retrieval process
-		$ids = self::retrieve_and_rank( $post_id, $count, $post_type );
-
-		// Release Lock
-		delete_transient( $lock_key );
-
-		if ( ! is_wp_error( $ids ) && is_array( $ids ) ) {
-			// Cache the result
-			set_transient( $transient_key, $ids, $cache_ttl );
-			return $ids;
-		}
-
-		// Return native fallback if error occurred
-		return self::get_native_fallback( $post_id, $count, $post_type );
+		return array_merge( $sorted_ai_ids, $sorted_fallback_ids );
 	}
 
 	/**
@@ -199,41 +223,7 @@ class Matching {
 			}
 		}
 
-		$ranked_ids = array_slice( $ranked_ids, 0, $count );
-
-		$sort_option = $settings['final_output_sort'] ?? 'similarity';
-		if ( 'similarity' !== $sort_option && ! empty( $ranked_ids ) ) {
-			if ( 'random' === $sort_option ) {
-				shuffle( $ranked_ids );
-			} else {
-				$posts_to_sort = get_posts( [
-					'post__in'       => $ranked_ids,
-					'orderby'        => 'post__in',
-					'posts_per_page' => -1,
-					'post_type'      => 'any',
-				] );
-
-				if ( 'date_desc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcmp( $b->post_date, $a->post_date );
-					} );
-				} elseif ( 'date_asc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcmp( $a->post_date, $b->post_date );
-					} );
-				} elseif ( 'title_asc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcasecmp( $a->post_title, $b->post_title );
-					} );
-				}
-
-				$ranked_ids = array_map( function( $p ) {
-					return $p->ID;
-				}, $posts_to_sort );
-			}
-		}
-
-		return $ranked_ids;
+		return array_slice( $ranked_ids, 0, $count );
 	}
 
 	/**
@@ -291,10 +281,10 @@ class Matching {
 		}
 
 		$concatenated = implode( "\n\n", array_filter( $chunks ) );
-		return wp_strip_all_tags( $concatenated );
+		return apply_filters( 'pishtop_ai_post_text', wp_strip_all_tags( $concatenated ), $post_id );
 	}
 
-	public static function get_native_fallback( int $post_id, int $count, string $post_type = '' ) {
+	public static function get_native_fallback( int $post_id, int $count, string $post_type = '', array $exclude_ids = [] ) {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return [];
@@ -313,10 +303,21 @@ class Matching {
 			'post_type'      => $post_type,
 			'posts_per_page' => $count,
 			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
-			'post__not_in'   => [ $post_id ],
+			'post__not_in'   => array_merge( [ $post_id ], $exclude_ids ),
 			'fields'         => 'ids',
 			'post_status'    => 'publish',
 		];
+
+		// Hide out of stock items in fallback if WooCommerce setting is enabled
+		if ( 'product' === $post_type && class_exists( 'WooCommerce' ) && 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+			$args['meta_query'] = [
+				[
+					'key'     => '_stock_status',
+					'value'   => 'outofstock',
+					'compare' => '!=',
+				],
+			];
+		}
 
 		// Polylang/WPML language filtering
 		$lang = self::get_post_language( $post_id );
@@ -352,38 +353,6 @@ class Matching {
 
 		$query = new \WP_Query( $args );
 		$ids = $query->posts;
-
-		$sort_option = $settings['final_output_sort'] ?? 'similarity';
-		if ( 'similarity' !== $sort_option && ! empty( $ids ) ) {
-			if ( 'random' === $sort_option ) {
-				shuffle( $ids );
-			} else {
-				$posts_to_sort = get_posts( [
-					'post__in'       => $ids,
-					'orderby'        => 'post__in',
-					'posts_per_page' => -1,
-					'post_type'      => 'any',
-				] );
-
-				if ( 'date_desc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcmp( $b->post_date, $a->post_date );
-					} );
-				} elseif ( 'date_asc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcmp( $a->post_date, $b->post_date );
-					} );
-				} elseif ( 'title_asc' === $sort_option ) {
-					usort( $posts_to_sort, function( $a, $b ) {
-						return strcasecmp( $a->post_title, $b->post_title );
-					} );
-				}
-
-				$ids = array_map( function( $p ) {
-					return $p->ID;
-				}, $posts_to_sort );
-			}
-		}
 
 		return $ids;
 	}
@@ -446,5 +415,51 @@ class Matching {
 		$unindexed_exists = $wpdb->get_var( $query );
 		
 		return ! empty( $unindexed_exists );
+	}
+
+	/**
+	 * Apply configured final output sorting (random, date_desc, date_asc, title_asc) to the recommendation IDs.
+	 */
+	public static function apply_final_sorting( array $ids ) {
+		if ( empty( $ids ) ) {
+			return [];
+		}
+
+		$settings = get_option( 'pishtop_ai_settings', [] );
+		$sort_option = $settings['final_output_sort'] ?? 'similarity';
+
+		if ( 'similarity' === $sort_option ) {
+			return $ids;
+		}
+
+		if ( 'random' === $sort_option ) {
+			shuffle( $ids );
+			return $ids;
+		}
+
+		$posts_to_sort = get_posts( [
+			'post__in'       => $ids,
+			'orderby'        => 'post__in',
+			'posts_per_page' => -1,
+			'post_type'      => 'any',
+		] );
+
+		if ( 'date_desc' === $sort_option ) {
+			usort( $posts_to_sort, function( $a, $b ) {
+				return strcmp( $b->post_date, $a->post_date );
+			} );
+		} elseif ( 'date_asc' === $sort_option ) {
+			usort( $posts_to_sort, function( $a, $b ) {
+				return strcmp( $a->post_date, $b->post_date );
+			} );
+		} elseif ( 'title_asc' === $sort_option ) {
+			usort( $posts_to_sort, function( $a, $b ) {
+				return strcasecmp( $a->post_title, $b->post_title );
+			} );
+		}
+
+		return array_map( function( $p ) {
+			return $p->ID;
+		}, $posts_to_sort );
 	}
 }

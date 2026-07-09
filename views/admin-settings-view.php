@@ -74,27 +74,64 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 			<div class="stat-content">
 				<h3><?php esc_html_e( 'Index Status', 'pishtop-content-suggestion-with-ai' ); ?></h3>
-				<div class="quota-value-row">
+				<div class="quota-value-row" style="margin-bottom: 0;">
 					<span class="quota-current"><?php echo esc_html( $indexed_posts ); ?></span>
 					<span class="quota-separator">/</span>
 					<span class="quota-limit"><?php echo esc_html( $total_posts ); ?></span>
 				</div>
-				<div style="margin-top: 10px;">
+				<div style="margin-top: 4px; margin-bottom: 2px;">
 					<?php if ( $unindexed_posts > 0 ) : ?>
-						<span class="index-pending-badge" style="display:inline-flex; align-items:center; background:rgba(249,115,22,0.1); color:rgb(249,115,22); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600;">
+						<span class="index-pending-badge" style="display:inline-flex; align-items:center; background:rgba(249,115,22,0.1); color:rgb(249,115,22); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">
 							<?php
 							/* translators: %d: number of unindexed posts */
 							echo esc_html( sprintf( __( '%d Pending', 'pishtop-content-suggestion-with-ai' ), $unindexed_posts ) );
 							?>
 						</span>
 					<?php else : ?>
-						<span class="index-complete-badge">
-							<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-							<?php esc_html_e( 'Fully Indexed', 'pishtop-content-suggestion-with-ai' ); ?>
+						<span class="index-complete-badge" style="display:inline-flex; align-items:center; background:rgba(5, 150, 105, 0.1); color:var(--success); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; border:1px solid rgba(5,150,105,0.2);">
+							<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="3" fill="none" style="margin-right:2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+							<?php esc_html_e( 'Indexed', 'pishtop-content-suggestion-with-ai' ); ?>
 						</span>
 					<?php endif; ?>
 				</div>
 				<p class="stat-meta"><?php esc_html_e( 'Local vector embeddings generated', 'pishtop-content-suggestion-with-ai' ); ?></p>
+			</div>
+			<?php
+			$pishtop_index_percent = $total_posts > 0 ? ( $indexed_posts / $total_posts ) * 100 : 0;
+			$pishtop_index_percent = min( 100, max( 0, $pishtop_index_percent ) );
+			?>
+			<div class="circular-gauge-wrapper">
+				<svg viewBox="0 0 36 36" class="circular-chart orange-chart">
+					<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<path class="circle" stroke-dasharray="<?php echo esc_attr( $pishtop_index_percent ); ?>, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<text x="18" y="20.35" class="percentage-label"><?php echo esc_html( round( $pishtop_index_percent ) ); ?>%</text>
+				</svg>
+			</div>
+		</div>
+
+		<div class="pishtop-card stat-card">
+			<div class="stat-icon-wrapper green-glow">
+				<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+			</div>
+			<div class="stat-content">
+				<h3><?php esc_html_e( 'Active Recommendations', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+				<div class="quota-value-row">
+					<span class="quota-current"><?php echo esc_html( $ranked_posts_count ); ?></span>
+					<span class="quota-separator">/</span>
+					<span class="quota-limit"><?php echo esc_html( $total_posts ); ?></span>
+				</div>
+				<p class="stat-meta"><?php esc_html_e( 'Posts with cached AI recommendations', 'pishtop-content-suggestion-with-ai' ); ?></p>
+			</div>
+			<?php
+			$pishtop_ranked_percent = $total_posts > 0 ? ( $ranked_posts_count / $total_posts ) * 100 : 0;
+			$pishtop_ranked_percent = min( 100, max( 0, $pishtop_ranked_percent ) );
+			?>
+			<div class="circular-gauge-wrapper">
+				<svg viewBox="0 0 36 36" class="circular-chart green-chart">
+					<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<path class="circle" stroke-dasharray="<?php echo esc_attr( $pishtop_ranked_percent ); ?>, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<text x="18" y="20.35" class="percentage-label"><?php echo esc_html( round( $pishtop_ranked_percent ) ); ?>%</text>
+				</svg>
 			</div>
 		</div>
 	</section>
@@ -772,6 +809,29 @@ Rules:
 
 					<p><strong><?php esc_html_e( 'Mutex Lock (Cache Stampede Protection)', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
 					<?php esc_html_e( 'During cache expiration, if multiple concurrent requests hit the same post, only the first request makes an external API call to OpenRouter. Subsequent concurrent requests immediately receive a native category fallback list rather than blocking execution or making duplicate costly API calls. Lock expires after 60 seconds.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+				</div>
+
+				<div>
+					<h3>5. <?php esc_html_e( 'WooCommerce Support & Filters', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Dynamic WooCommerce Pages', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'When rendering recommendations on WooCommerce Cart, Checkout, or Order Received (Thank You) pages, the plugin automatically overrides generic page titles/descriptions with products from the active customer\'s cart or order details.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Cache Isolation & Security', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Recommendation caching keys are partitioned using secure MD5 cart item hashes and order IDs. This prevents different users from seeing each other\'s cached product recommendations on WooCommerce pages.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Developer Filter Hooks', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'Customize matching texts and cache keys via standard WordPress filters:', 'pishtop-content-suggestion-with-ai' ); ?><br>
+					<code>pishtop_ai_post_text</code> – <?php esc_html_e( 'Filter raw content source text prior to generating embedding vectors.', 'pishtop-content-suggestion-with-ai' ); ?><br>
+					<code>pishtop_ai_recommendations_transient_key</code> – <?php esc_html_e( 'Filter the transient caching key for custom routing.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+				</div>
+
+				<div>
+					<h3>6. <?php esc_html_e( 'Viewport Lazy Loading', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<p><strong><?php esc_html_e( 'Intersection Observer', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'To conserve server bandwidth and API quotas, frontend suggestions are loaded lazily. The browser postpones the AJAX retrieval until the element scrolls close to the visible viewport (within 100px).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+
+					<p><strong><?php esc_html_e( 'Legacy Fallback Support', 'pishtop-content-suggestion-with-ai' ); ?></strong><br>
+					<?php esc_html_e( 'For older browsers that do not support modern IntersectionObserver APIs, the plugin seamlessly falls back to standard instant page load AJAX retrieval.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 			</div>
 		</div>

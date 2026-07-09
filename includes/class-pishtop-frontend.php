@@ -28,6 +28,10 @@ class Frontend {
 		// AJAX frontend suggestions retrievals
 		add_action( 'wp_ajax_pishtop_get_suggestions', [ $this, 'ajax_get_suggestions' ] );
 		add_action( 'wp_ajax_nopriv_pishtop_get_suggestions', [ $this, 'ajax_get_suggestions' ] );
+
+		// WooCommerce dynamic page overrides
+		add_filter( 'pishtop_ai_post_text', [ $this, 'override_woocommerce_page_text' ], 10, 2 );
+		add_filter( 'pishtop_ai_recommendations_transient_key', [ $this, 'override_woocommerce_transient_key' ], 10, 4 );
 	}
 
 	public function enqueue_assets() {
@@ -220,5 +224,164 @@ class Frontend {
 		}
 
 		return $html;
+	}
+
+	/**
+	 * Override matching text for WooCommerce Cart, Checkout, and Thank You pages.
+	 */
+	public function override_woocommerce_page_text( string $text, int $post_id ): string {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return $text;
+		}
+
+		$cart_page_id = wc_get_page_id( 'cart' );
+		$checkout_page_id = wc_get_page_id( 'checkout' );
+
+		// 1. Cart Page
+		if ( $post_id === $cart_page_id || ( is_cart() && get_the_ID() === $post_id ) ) {
+			if ( WC()->cart ) {
+				$cart_items = WC()->cart->get_cart();
+				$names = [];
+				foreach ( $cart_items as $item ) {
+					$product = $item['data'];
+					if ( $product ) {
+						$names[] = $product->get_name();
+					}
+				}
+				if ( ! empty( $names ) ) {
+					return implode( ', ', $names );
+				}
+			}
+		}
+
+		// 2. Checkout / Thank You Page
+		if ( $post_id === $checkout_page_id || ( is_checkout() && get_the_ID() === $post_id ) ) {
+			// Check if we are on the Thank You (order received) page by parsing referer or URL
+			$order_id = 0;
+			if ( is_order_received_page() ) {
+				global $wp;
+				$order_id = isset( $wp->query_vars['order-received'] ) ? intval( $wp->query_vars['order-received'] ) : 0;
+			} else {
+				$referer = wp_get_referer();
+				if ( $referer ) {
+					if ( preg_match( '/\/order-received\/(\d+)/', $referer, $matches ) ) {
+						$order_id = intval( $matches[1] );
+					} else {
+						$parsed_url = wp_parse_url( $referer );
+						if ( ! empty( $parsed_url['query'] ) ) {
+							wp_parse_str( $parsed_url['query'], $query_vars );
+							if ( isset( $query_vars['order-received'] ) ) {
+								$order_id = intval( $query_vars['order-received'] );
+							} elseif ( isset( $query_vars['order'] ) ) {
+								$order_id = intval( $query_vars['order'] );
+							}
+						}
+					}
+				}
+			}
+
+			if ( $order_id > 0 ) {
+				$order = wc_get_order( $order_id );
+				if ( $order ) {
+					$names = [];
+					foreach ( $order->get_items() as $item ) {
+						$names[] = $item->get_name();
+					}
+					if ( ! empty( $names ) ) {
+						return implode( ', ', $names );
+					}
+				}
+			}
+
+			// Fallback: active cart items if checkout page
+			if ( WC()->cart ) {
+				$cart_items = WC()->cart->get_cart();
+				$names = [];
+				foreach ( $cart_items as $item ) {
+					$product = $item['data'];
+					if ( $product ) {
+						$names[] = $product->get_name();
+					}
+				}
+				if ( ! empty( $names ) ) {
+					return implode( ', ', $names );
+				}
+			}
+		}
+
+		return $text;
+	}
+
+	/**
+	 * Vary the caching transient key for WooCommerce Cart, Checkout, and Thank You pages to prevent cross-user caching leakage.
+	 */
+	public function override_woocommerce_transient_key( string $key, int $post_id, string $template_id, string $post_type ): string {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return $key;
+		}
+
+		$cart_page_id = wc_get_page_id( 'cart' );
+		$checkout_page_id = wc_get_page_id( 'checkout' );
+
+		// 1. Cart Page (cache unique to cart contents hash)
+		if ( $post_id === $cart_page_id ) {
+			if ( WC()->cart ) {
+				$cart_items = WC()->cart->get_cart();
+				$ids = [];
+				foreach ( $cart_items as $item ) {
+					$ids[] = $item['product_id'] . '_' . $item['quantity'];
+				}
+				if ( ! empty( $ids ) ) {
+					sort( $ids );
+					$cart_hash = md5( implode( '|', $ids ) );
+					return $key . '_cart_' . $cart_hash;
+				}
+			}
+		}
+
+		// 2. Checkout / Thank You Page (cache unique to order or cart contents)
+		if ( $post_id === $checkout_page_id ) {
+			$order_id = 0;
+			if ( is_order_received_page() ) {
+				global $wp;
+				$order_id = isset( $wp->query_vars['order-received'] ) ? intval( $wp->query_vars['order-received'] ) : 0;
+			} else {
+				$referer = wp_get_referer();
+				if ( $referer ) {
+					if ( preg_match( '/\/order-received\/(\d+)/', $referer, $matches ) ) {
+						$order_id = intval( $matches[1] );
+					} else {
+						$parsed_url = wp_parse_url( $referer );
+						if ( ! empty( $parsed_url['query'] ) ) {
+							wp_parse_str( $parsed_url['query'], $query_vars );
+							if ( isset( $query_vars['order-received'] ) ) {
+								$order_id = intval( $query_vars['order-received'] );
+							} elseif ( isset( $query_vars['order'] ) ) {
+								$order_id = intval( $query_vars['order'] );
+							}
+						}
+					}
+				}
+			}
+
+			if ( $order_id > 0 ) {
+				return $key . '_order_' . $order_id;
+			}
+
+			if ( WC()->cart ) {
+				$cart_items = WC()->cart->get_cart();
+				$ids = [];
+				foreach ( $cart_items as $item ) {
+					$ids[] = $item['product_id'] . '_' . $item['quantity'];
+				}
+				if ( ! empty( $ids ) ) {
+					sort( $ids );
+					$cart_hash = md5( implode( '|', $ids ) );
+					return $key . '_cart_' . $cart_hash;
+				}
+			}
+		}
+
+		return $key;
 	}
 }
