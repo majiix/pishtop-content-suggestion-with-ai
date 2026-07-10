@@ -286,8 +286,8 @@ Rules:
 			$id = sanitize_key( $tpl['id'] );
 			$updated_templates[ $id ] = [
 				'id'           => $id,
-				'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
-				'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
+				'wrapper_html' => $this->sanitize_template_html( $tpl['wrapper_html'] ?? '' ),
+				'item_html'    => $this->sanitize_template_html( $tpl['item_html'] ?? '' ),
 				'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
 			];
 		}
@@ -495,8 +495,8 @@ Rules:
 				$id = sanitize_key( $tpl['id'] );
 				$updated_templates[ $id ] = [
 					'id'           => $id,
-					'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
-					'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
+					'wrapper_html' => $this->sanitize_template_html( $tpl['wrapper_html'] ?? '' ),
+					'item_html'    => $this->sanitize_template_html( $tpl['item_html'] ?? '' ),
 					'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
 				];
 			}
@@ -507,6 +507,21 @@ Rules:
 			\pishtop_log( 'ERROR', 'Exception in save templates: ' . $e->getMessage() );
 			wp_send_json_error( __( 'Failed to save templates.', 'pishtop-content-suggestion-with-ai' ) );
 		}
+	}
+
+	/**
+	 * Sanitizes template HTML allowing style tags besides default post tags.
+	 *
+	 * @param string $html Input HTML.
+	 * @return string Sanitized HTML.
+	 */
+	private function sanitize_template_html( string $html ): string {
+		$allowed_html = wp_kses_allowed_html( 'post' );
+		$allowed_html['style'] = [
+			'type'  => true,
+			'media' => true,
+		];
+		return wp_kses( $html, $allowed_html );
 	}
 
 	/**
