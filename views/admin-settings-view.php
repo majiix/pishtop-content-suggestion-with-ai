@@ -259,9 +259,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="form-row">
 					<label for="pishtop_embedding_model"><?php esc_html_e( 'Embedding Model', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
-						<select id="pishtop_embedding_model" name="pishtop_ai_settings[embedding_model]" class="pishtop-model-select loading" data-initial="<?php echo esc_attr( $settings['embedding_model'] ); ?>">
-							<option value="<?php echo esc_attr( $settings['embedding_model'] ); ?>"><?php echo esc_html( $settings['embedding_model'] ); ?></option>
-						</select>
+						<div style="display: flex; align-items: center; gap: 10px;">
+							<select id="pishtop_embedding_model" name="pishtop_ai_settings[embedding_model]" class="pishtop-model-select loading" data-initial="<?php echo esc_attr( $settings['embedding_model'] ); ?>" style="flex-grow: 1; max-width: 450px;">
+								<option value="<?php echo esc_attr( $settings['embedding_model'] ); ?>"><?php echo esc_html( $settings['embedding_model'] ); ?></option>
+							</select>
+							<button type="button" class="button button-secondary pishtop-update-models-btn" title="<?php esc_attr_e( 'Refresh dynamic models list from OpenRouter API', 'pishtop-content-suggestion-with-ai' ); ?>" style="height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; gap: 6px;">
+								<svg class="btn-spinner hidden" viewBox="0 0 50 50" style="width: 16px; height: 16px; animation: rotate 2s linear infinite; margin: 0;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" style="stroke-linecap: round; stroke: currentColor;"></circle></svg>
+								<span><?php esc_html_e( 'Update Models', 'pishtop-content-suggestion-with-ai' ); ?></span>
+							</button>
+						</div>
 						<div id="pishtop-embedding-model-warning" class="pishtop-warning-box hidden" style="margin-top: 10px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; color: #b45309; max-width: 600px;">
 							<strong style="display: block; font-size: 14px; margin-bottom: 4px;"><?php esc_html_e( 'Warning: Changing the Embedding Model', 'pishtop-content-suggestion-with-ai' ); ?></strong>
 							<p style="margin: 0; font-size: 13px; line-height: 1.4;">
@@ -337,9 +343,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="form-row row-llm-only">
 					<label for="pishtop_ranking_model"><?php esc_html_e( 'LLM Re-ranking Model', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
-						<select id="pishtop_ranking_model" name="pishtop_ai_settings[ranking_model]" class="pishtop-model-select loading">
-							<option value="<?php echo esc_attr( $settings['ranking_model'] ); ?>"><?php echo esc_html( $settings['ranking_model'] ); ?></option>
-						</select>
+						<div style="display: flex; align-items: center; gap: 10px;">
+							<select id="pishtop_ranking_model" name="pishtop_ai_settings[ranking_model]" class="pishtop-model-select loading" style="flex-grow: 1; max-width: 450px;">
+								<option value="<?php echo esc_attr( $settings['ranking_model'] ); ?>"><?php echo esc_html( $settings['ranking_model'] ); ?></option>
+							</select>
+							<button type="button" class="button button-secondary pishtop-update-models-btn" title="<?php esc_attr_e( 'Refresh dynamic models list from OpenRouter API', 'pishtop-content-suggestion-with-ai' ); ?>" style="height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; gap: 6px;">
+								<svg class="btn-spinner hidden" viewBox="0 0 50 50" style="width: 16px; height: 16px; animation: rotate 2s linear infinite; margin: 0;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" style="stroke-linecap: round; stroke: currentColor;"></circle></svg>
+								<span><?php esc_html_e( 'Update Models', 'pishtop-content-suggestion-with-ai' ); ?></span>
+							</button>
+						</div>
 						<p class="description"><?php esc_html_e( 'Large Language Model used to evaluate and sort the final recommendations pool. More advanced models yield better suggestions but cost more.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>

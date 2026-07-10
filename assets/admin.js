@@ -169,16 +169,24 @@ jQuery(document).ready(function($) {
 	}
 
 	// Load OpenRouter models asynchronously via AJAX
-	function loadOpenRouterModels() {
+	function loadOpenRouterModels(forceRefresh) {
 		var $embSelect = $('#pishtop_embedding_model');
 		var $rankSelect = $('#pishtop_ranking_model');
 
 		var selectedEmb = $embSelect.val();
 		var selectedRank = $rankSelect.val();
 
+		if (forceRefresh) {
+			$embSelect.addClass('loading');
+			$rankSelect.addClass('loading');
+			$('.pishtop-update-models-btn .btn-spinner').removeClass('hidden');
+			$('.pishtop-update-models-btn').prop('disabled', true);
+		}
+
 		$.get(pishtopSettings.ajaxUrl, {
 			action: 'pishtop_load_models',
-			nonce: pishtopSettings.nonce
+			nonce: pishtopSettings.nonce,
+			force_refresh: forceRefresh ? 1 : 0
 		}, function(response) {
 			if (response.success) {
 				$embSelect.empty().removeClass('loading');
@@ -192,17 +200,37 @@ jQuery(document).ready(function($) {
 					var selectedAttr = (model.id === selectedRank) ? 'selected="selected"' : '';
 					$rankSelect.append('<option value="' + model.id + '" ' + selectedAttr + '>' + model.name + '</option>');
 				});
+				if (forceRefresh) {
+					showNotification("OpenRouter models list updated successfully.", "success");
+				}
 			} else {
 				$embSelect.removeClass('loading');
 				$rankSelect.removeClass('loading');
+				if (forceRefresh) {
+					showNotification(response.data || "Failed to update models list.", "error");
+				}
 			}
 		}).fail(function() {
 			$embSelect.removeClass('loading');
 			$rankSelect.removeClass('loading');
+			if (forceRefresh) {
+				showNotification("Failed to connect to update server.", "error");
+			}
+		}).always(function() {
+			if (forceRefresh) {
+				$('.pishtop-update-models-btn .btn-spinner').addClass('hidden');
+				$('.pishtop-update-models-btn').prop('disabled', false);
+			}
 		});
 	}
 
 	loadOpenRouterModels();
+
+	// Bind click event on update models button
+	$(document).on('click', '.pishtop-update-models-btn', function(e) {
+		e.preventDefault();
+		loadOpenRouterModels(true);
+	});
 
 	// Confirm action helper with Toasts
 	function runAjaxAction(btnId, actionName, dataPayload, successCallback) {
