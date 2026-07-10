@@ -95,6 +95,37 @@ jQuery(document).ready(function($) {
 		toggleCachingFields();
 	});
 
+	// Toggle background workers options visibility
+	function toggleCronWorkerFields() {
+		var isEmbeddingOn = $('#pishtop_enable_cron_embedding').is(':checked');
+		var isRankingOn = $('#pishtop_enable_cron_ranking').is(':checked');
+
+		if (isEmbeddingOn) {
+			$('.row-cron-embedding-only').show();
+		} else {
+			$('.row-cron-embedding-only').hide();
+		}
+
+		if (isRankingOn) {
+			$('.row-cron-ranking-only').show();
+		} else {
+			$('.row-cron-ranking-only').hide();
+		}
+
+		// Cron run interval is only needed if at least one background worker is active
+		if (isEmbeddingOn || isRankingOn) {
+			$('.row-cron-interval').show();
+		} else {
+			$('.row-cron-interval').hide();
+		}
+	}
+
+	toggleCronWorkerFields();
+
+	$(document).on('change', '#pishtop_enable_cron_embedding, #pishtop_enable_cron_ranking', function() {
+		toggleCronWorkerFields();
+	});
+
 	// Warning warning box on embedding model change
 	$('#pishtop_embedding_model').on('change', function() {
 		var selected = $(this).val();

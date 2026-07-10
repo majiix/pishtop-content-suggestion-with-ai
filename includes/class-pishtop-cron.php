@@ -107,14 +107,9 @@ class Cron {
 			}
 
 			$settings = get_option( 'pishtop_ai_settings', [] );
-			$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
-			if ( ! $enable_embedding ) {
-				return;
-			}
-
 			$allowed_types = ! empty( $settings['indexed_post_types'] ) ? $settings['indexed_post_types'] : [ 'post' ];
 
-			if ( ! in_array( $post->post_type, $allowed_types, true ) || 'publish' !== $post->post_status ) {
+			if ( ! in_array( $post->post_type, $allowed_types, true ) ) {
 				return;
 			}
 
@@ -123,10 +118,13 @@ class Cron {
 			Database::delete_embedding( $post_id );
 			wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 
-			// Schedule background worker event to generate embedding (delayed by settings value)
-			$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
-			if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
-				wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
+			$enable_embedding = isset( $settings['enable_cron_embedding'] ) ? (bool) $settings['enable_cron_embedding'] : true;
+			if ( $enable_embedding && 'publish' === $post->post_status ) {
+				// Schedule background worker event to generate embedding (delayed by settings value)
+				$delay = isset( $settings['cron_indexing_delay'] ) ? intval( $settings['cron_indexing_delay'] ) : 5;
+				if ( ! wp_next_scheduled( 'pishtop_ai_index_post_event', [ $post_id ] ) ) {
+					wp_schedule_single_event( time() + $delay, 'pishtop_ai_index_post_event', [ $post_id ] );
+				}
 			}
 		} catch ( \Throwable $e ) {
 			\pishtop_log( 'ERROR', 'Exception in post indexing queue: ' . $e->getMessage() );

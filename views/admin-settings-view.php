@@ -454,7 +454,7 @@ Rules:
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-cron-embedding-only">
 					<label for="pishtop_cron_indexing_delay"><?php esc_html_e( 'Background Indexing Delay', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<div class="input-unit-group">
@@ -495,7 +495,7 @@ Rules:
 					<label><?php esc_html_e( 'Background Embedding Worker', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<label class="pishtop-switch-wrapper">
-							<input type="checkbox" name="pishtop_ai_settings[enable_cron_embedding]" value="1" <?php checked( $settings['enable_cron_embedding'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<input type="checkbox" id="pishtop_enable_cron_embedding" name="pishtop_ai_settings[enable_cron_embedding]" value="1" <?php checked( $settings['enable_cron_embedding'] ?? 1 ); ?> class="pishtop-switch-input" />
 							<span class="pishtop-switch"></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'Automatically generate post vector embeddings in the background using the periodic cron worker.', 'pishtop-content-suggestion-with-ai' ); ?></p>
@@ -506,14 +506,14 @@ Rules:
 					<label><?php esc_html_e( 'Background Ranking Worker', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<label class="pishtop-switch-wrapper">
-							<input type="checkbox" name="pishtop_ai_settings[enable_cron_ranking]" value="1" <?php checked( $settings['enable_cron_ranking'] ?? 0 ); ?> class="pishtop-switch-input" />
+							<input type="checkbox" id="pishtop_enable_cron_ranking" name="pishtop_ai_settings[enable_cron_ranking]" value="1" <?php checked( $settings['enable_cron_ranking'] ?? 0 ); ?> class="pishtop-switch-input" />
 							<span class="pishtop-switch"></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'Pre-calculate and cache suggestions in the background to ensure fast page loads for visitors.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-cron-interval">
 					<label for="pishtop_cron_interval_minutes"><?php esc_html_e( 'Cron Run Interval', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<div class="input-unit-group">
@@ -524,7 +524,7 @@ Rules:
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-cron-embedding-only">
 					<label for="pishtop_cron_embedding_batch_size"><?php esc_html_e( 'Embedding Batch Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<input type="number" id="pishtop_cron_embedding_batch_size" name="pishtop_ai_settings[cron_embedding_batch_size]" value="<?php echo esc_attr( $settings['cron_embedding_batch_size'] ?? 5 ); ?>" min="1" class="small-text" />
@@ -532,7 +532,7 @@ Rules:
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-cron-ranking-only">
 					<label for="pishtop_cron_ranking_batch_size"><?php esc_html_e( 'Ranking Batch Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<input type="number" id="pishtop_cron_ranking_batch_size" name="pishtop_ai_settings[cron_ranking_batch_size]" value="<?php echo esc_attr( $settings['cron_ranking_batch_size'] ?? 5 ); ?>" min="1" class="small-text" />
