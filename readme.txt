@@ -54,7 +54,7 @@ Use of these services is subject to the OpenRouter Terms of Service and Privacy 
 == Frequently Asked Questions ==
 
 = How do I display suggestions? =
-You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]`, the alias shortcode `[pishtop_ai_related_posts]`, or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
+You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]` or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
 
 = What API models does it support? =
 The plugin automatically pulls all available embedding and chat models from the OpenRouter API. You can choose any supported model (e.g., Google Gemini, OpenAI GPT, Cohere) in the Matching Engine settings tab.
@@ -112,7 +112,7 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 
 = Display Templates =
 * **Layout CSS Toggle:** Toggle loading built-in styles.
-* **Repeater List:** Create custom HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, `{{post_id}}`, `{{id}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price:key}}`).
+* **Repeater List:** Create custom HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, `{{id}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price}}` / `{{price:key}}`).
 
 = Logging & Diagnostics =
 * **Enable Logging:** Toggle logging console.
@@ -125,7 +125,7 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 
 = 1.3.1 =
 * Remove Custom CSS styling from display templates and backend dashboard to comply with WordPress.org security policies regarding arbitrary code/styling insertion.
-* Rename the shortcode alias from `[ai_related_posts]` to `[pishtop_ai_related_posts]` to enforce proper prefixing standards.
+* Remove the shortcode alias `[ai_related_posts]` completely to enforce proper prefixing standards and simplify usage.
 * Add dedicated External Services section to readme documenting integration, data transfer details, terms, and privacy policy links for OpenRouter.ai API services.
 
 = 1.2.0 =
@@ -175,7 +175,7 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 = 1.0.1 =
 * Expand in-app Help and Documentation tab with comprehensive user guidelines.
 * Add shortcut Settings link on Plugins list screen.
-* Support {{post_id}} and {{id}} template layout placeholders.
+* Support {{id}} template layout placeholder.
 
 = 1.0.0 =
 * Initial release. Expose all parameters, timeouts, logging rates, delays, and customization options to the administrator dashboard.

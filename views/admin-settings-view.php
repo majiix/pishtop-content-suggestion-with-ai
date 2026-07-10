@@ -684,7 +684,7 @@ Rules:
 				<p class="description" style="margin-bottom: 20px;">
 					<?php esc_html_e( 'Templates are invoked via shortcode [pishtop_suggestions template="template_id"].', 'pishtop-content-suggestion-with-ai' ); ?><br>
 					<strong><?php esc_html_e( 'Placeholders:', 'pishtop-content-suggestion-with-ai' ); ?></strong>
-					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{post_id}}</code>, <code>{{id}}</code>, <code>{{meta:custom_key}}</code> / <code>{{meta:custom_key | {{title}} }}</code>, <code>{{price:price_key}}</code>
+					<code>{{title}}</code>, <code>{{permalink}}</code>, <code>{{image_url}}</code>, <code>{{excerpt}}</code>, <code>{{post_date}}</code>, <code>{{id}}</code>, <code>{{meta:custom_key}}</code> / <code>{{meta:custom_key | {{title}} }}</code>, <code>{{price}}</code> / <code>{{price:price_key}}</code>
 				</p>
 
 				<div id="pishtop-templates-repeater">
@@ -775,10 +775,9 @@ Rules:
 					<h3>1. <?php esc_html_e( 'Shortcode & Block Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><?php esc_html_e( 'Use the shortcode anywhere on posts, pages, or widgets to display AI recommendations. Supports fallback rendering if offline.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap;">[pishtop_suggestions count="5" template="default_list"]</pre>
-					<p><strong><?php esc_html_e( 'Alias Shortcode:', 'pishtop-content-suggestion-with-ai' ); ?></strong> <code>[pishtop_ai_related_posts]</code></p>
 					<p><strong><?php esc_html_e( 'Attributes:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
 					<ul style="list-style: disc; padding-left: 20px; margin-top: 5px;">
-						<li><code>count</code> / <code>limit</code>: <?php esc_html_e( 'Max items to display (overrides default settings count).', 'pishtop-content-suggestion-with-ai' ); ?></li>
+						<li><code>count</code>: <?php esc_html_e( 'Max items to display (overrides default settings count).', 'pishtop-content-suggestion-with-ai' ); ?></li>
 						<li><code>template</code>: <?php esc_html_e( 'Template ID handle defined under Display Templates.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 						<li><code>post_id</code>: <?php esc_html_e( 'Optionally retrieve related items for a specific post instead of the current loop post.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 					</ul>
@@ -796,9 +795,9 @@ Rules:
 							<tr><td><code>{{image_url}}</code></td><td><?php esc_html_e( 'Featured image source (uses placeholder or fallback if empty)', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{excerpt}}</code></td><td><?php esc_html_e( 'Short summary description of content', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{post_date}}</code></td><td><?php esc_html_e( 'Date of publication', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{post_id}}</code> / <code>{{id}}</code></td><td><?php esc_html_e( 'Unique identifier of the post', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{id}}</code></td><td><?php esc_html_e( 'Unique identifier of the post', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 							<tr><td><code>{{meta:key_name}}</code><br><span style="font-size:11px;color:#64748b;display:block;margin-top:2px;"><?php esc_html_e( 'With fallback:', 'pishtop-content-suggestion-with-ai' ); ?> <code>{{meta:key | {{title}} }}</code></span></td><td><?php esc_html_e( 'Fetches custom postmeta key value. Optional pipe allows fallback placeholder/text if key is missing or empty.', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
-							<tr><td><code>{{price:key_name}}</code></td><td><?php esc_html_e( 'WooCommerce formatted currency price value (e.g. {{price:_price}})', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
+							<tr><td><code>{{price}}</code> / <code>{{price:key_name}}</code></td><td><?php esc_html_e( 'WooCommerce formatted currency price value (defaults to {{price:_price}})', 'pishtop-content-suggestion-with-ai' ); ?></td></tr>
 						</tbody>
 					</table>
 				</div>

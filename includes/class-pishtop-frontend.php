@@ -21,7 +21,6 @@ class Frontend {
 
 	private function __construct() {
 		add_shortcode( 'pishtop_suggestions', [ $this, 'render_suggestions_shortcode' ] );
-		add_shortcode( 'pishtop_ai_related_posts', [ $this, 'render_suggestions_shortcode' ] );
 		add_action( 'init', [ $this, 'register_gutenberg_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
 
@@ -52,6 +51,7 @@ class Frontend {
 			'render_callback' => [ $this, 'render_block' ],
 			'attributes'      => [
 				'post_type' => [ 'type' => 'string', 'default' => 'post' ],
+				'count'     => [ 'type' => 'number', 'default' => 5 ],
 				'limit'     => [ 'type' => 'number', 'default' => 5 ],
 				'template'  => [ 'type' => 'string', 'default' => 'default_list' ],
 			],
@@ -82,7 +82,6 @@ class Frontend {
 			$a = shortcode_atts( [
 				'post_id'  => 0,
 				'count'    => $default_count,
-				'limit'    => 0,
 				'template' => 'default_list',
 			], $atts );
 
@@ -95,8 +94,9 @@ class Frontend {
 				return '';
 			}
 
-			$limit = $a['limit'] > 0 ? intval( $a['limit'] ) : intval( $a['count'] );
-			$limit = max( 1, $limit );
+			// Support legacy 'limit' attribute for backward compatibility
+			$count_val = isset( $atts['limit'] ) && intval( $atts['limit'] ) > 0 ? intval( $atts['limit'] ) : intval( $a['count'] );
+			$limit = max( 1, $count_val );
 			$template = sanitize_key( $a['template'] );
 
 			// Retrieve post type filter configured inside the template
@@ -208,16 +208,17 @@ class Frontend {
 		$post_date = esc_html( get_the_date( '', $post ) );
 
 		$html = str_replace(
-			[ '{{title}}', '{{permalink}}', '{{image_url}}', '{{excerpt}}', '{{post_date}}', '{{post_id}}', '{{id}}' ],
-			[ $title, $permalink, $image_url, $excerpt, $post_date, $id, $id ],
+			[ '{{title}}', '{{permalink}}', '{{image_url}}', '{{excerpt}}', '{{post_date}}', '{{id}}' ],
+			[ $title, $permalink, $image_url, $excerpt, $post_date, $id ],
 			$html
 		);
 
-		// Handle WooCommerce price: {{price:key_name}}
-		if ( preg_match_all( '/\{\{price:([a-zA-Z0-9_\-]+)\}\}/', $html, $matches ) ) {
+		// Handle WooCommerce price: {{price}} or {{price:key_name}}
+		if ( preg_match_all( '/\{\{price(?::([a-zA-Z0-9_\-]+))?\}\}/', $html, $matches ) ) {
 			$is_wc_active = class_exists( 'WooCommerce' );
 			foreach ( $matches[1] as $idx => $meta_key ) {
-				$raw_val = get_post_meta( $id, $meta_key, true );
+				$meta_key = ! empty( $meta_key ) ? $meta_key : '_price';
+				$raw_val  = get_post_meta( $id, $meta_key, true );
 				$formatted_price = '';
 				if ( $is_wc_active && is_numeric( $raw_val ) ) {
 					$formatted_price = wc_price( floatval( $raw_val ) );
