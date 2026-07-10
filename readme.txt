@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.6.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -122,6 +122,20 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.6.0 =
+* Fix background ranking worker transient version prefix check and key resolution, resolving worker execution block.
+* Enforce that LLM re-ranking (both via cron ranking worker and frontend matching cache misses) is executed only after database vector embedding indexing reaches 100% completion, falling back to local vector similarity matching during the indexing phase.
+* Allow real-time frontend matching on cache misses to suggest posts immediately from the subset of already-indexed candidates.
+
+= 1.5.0 =
+* Implement cache transient key versioning (`pishtop_rec_v{version}_`) to guarantee cache invalidation on external object caches (like Redis or Memcached).
+* Resolve query crashes on MySQL strict `ONLY_FULL_GROUP_BY` SQL mode.
+* Update taxonomy queries to use `tt_ids` (term taxonomy IDs) for strict relationship matching.
+* Remove third-party Google Fonts imports and styling to comply with GDPR privacy guidelines and WordPress.org directory policies.
+* Bypass nonce check on the public suggestions AJAX endpoint to prevent page-cached guest visitor requests from breaking.
+* Add key character filters on Template ID settings input fields to prevent template mismatch errors.
+* Update default LLM re-ranking prompt templates with priority criteria, security rules, and JSON output contracts.
 
 = 1.4.0 =
 * Add LLM Shortfall Behavior option to let users choose between filling empty slots with similarity results or hiding them.

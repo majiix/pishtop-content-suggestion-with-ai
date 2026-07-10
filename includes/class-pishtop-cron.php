@@ -355,12 +355,6 @@ class Cron {
 	 * Run background ranking worker.
 	 */
 	private function run_ranking_worker( $settings ) {
-		$enable_cache = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
-		if ( ! $enable_cache ) {
-			\pishtop_log( 'INFO', 'Background cron recommendations ranking worker skipped: cache storage is disabled in plugin settings.' );
-			return;
-		}
-
 		if ( Matching::has_unindexed_posts() ) {
 			\pishtop_log( 'INFO', 'Background cron recommendations ranking worker skipped: database still contains published posts that lack embedding vectors.' );
 			return;
@@ -396,22 +390,25 @@ class Cron {
 		$limit = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;
 		$ranking_count = 0;
 
+		$cache_ver = get_option( 'pishtop_rec_cache_version', 1 );
 		$cached_post_ids = [];
 		if ( ! wp_using_ext_object_cache() && ! empty( $post_ids ) ) {
 			$time = time();
+			$prefix = "_transient_timeout_pishtop_rec_v{$cache_ver}_";
+			$prefix_len = strlen( $prefix );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT option_name FROM {$wpdb->options} 
 					 WHERE option_name LIKE %s 
 					 AND option_value > %d",
-					$wpdb->esc_like( '_transient_timeout_pishtop_rec_' ) . '%',
+					$wpdb->esc_like( $prefix ) . '%',
 					$time
 				)
 			);
 			if ( is_array( $rows ) ) {
 				foreach ( $rows as $row ) {
-					$suffix = substr( $row->option_name, 31 );
+					$suffix = substr( $row->option_name, $prefix_len );
 					$parts = explode( '_', $suffix );
 					if ( ! empty( $parts[0] ) && is_numeric( $parts[0] ) ) {
 						$cached_post_ids[ intval( $parts[0] ) ] = true;
@@ -424,7 +421,7 @@ class Cron {
 			foreach ( $templates as $tpl_id => $tpl ) {
 				$tpl_post_type = $tpl['post_type'] ?? '';
 				foreach ( $post_ids as $post_id ) {
-					$transient_key = "pishtop_rec_{$post_id}_{$tpl_id}_" . sanitize_key( $tpl_post_type );
+					$transient_key = "pishtop_rec_v{$cache_ver}_{$post_id}_{$tpl_id}_" . sanitize_key( $tpl_post_type );
 					$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $tpl_id, $tpl_post_type );
 					
 					if ( ! wp_using_ext_object_cache() && isset( $cached_post_ids[ $post_id ] ) ) {

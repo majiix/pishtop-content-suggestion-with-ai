@@ -55,47 +55,42 @@ class Matching {
 			$transient_key = "pishtop_rec_v{$cache_ver}_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
 			$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $template_id, $post_type );
 			
-			$enable_cache  = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
+			$enable_cache  = ( ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] ) ) || ! empty( $settings['enable_cron_ranking'] );
 			$cached_ids    = $enable_cache ? get_transient( $transient_key ) : false;
 
 			if ( false !== $cached_ids && is_array( $cached_ids ) ) {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
 			} else {
 				// Cache miss.
-				if ( self::has_unindexed_posts() ) {
-					\pishtop_log( 'INFO', "Index status incomplete: some published posts are missing embedding vectors. Falling back to native sorting for post ID {$post_id}." );
+				// Mutex Cache Stampede Protection
+				$lock_key = "pishtop_lock_{$post_id}";
+				$is_locked = get_transient( $lock_key );
+
+				if ( $is_locked ) {
+					\pishtop_log( 'INFO', "Mutex lock active for post ID {$post_id}: another request is currently generating recommendations for this post. Returning native fallback suggestions to avoid cache stampede." );
 					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 				} else {
-					// Mutex Cache Stampede Protection
-					$lock_key = "pishtop_lock_{$post_id}";
-					$is_locked = get_transient( $lock_key );
+					// Acquire Lock
+					$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
+					set_transient( $lock_key, true, $lock_ttl );
 
-					if ( $is_locked ) {
-						\pishtop_log( 'INFO', "Mutex lock active for post ID {$post_id}: another request is currently generating recommendations for this post. Returning native fallback suggestions to avoid cache stampede." );
-						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
-					} else {
-						// Acquire Lock
-						$lock_ttl = isset( $settings['mutex_lock_ttl'] ) ? intval( $settings['mutex_lock_ttl'] ) : 60;
-						set_transient( $lock_key, true, $lock_ttl );
+					// Fetch $max_ai_count posts from AI
+					$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
 
-						// Fetch $max_ai_count posts from AI
-						$api_ids = self::retrieve_and_rank( $post_id, $max_ai_count, $post_type );
+					// Release Lock
+					delete_transient( $lock_key );
 
-						// Release Lock
-						delete_transient( $lock_key );
-
-						if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
-							if ( $enable_cache ) {
-								set_transient( $transient_key, $api_ids, $cache_ttl );
-							}
-							$ai_ids = array_slice( $api_ids, 0, $ai_count );
-						} else {
-							// Cache failure for 300 seconds to protect site speed
-							if ( $enable_cache ) {
-								set_transient( $transient_key, [], 300 );
-							}
-							$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
+					if ( ! is_wp_error( $api_ids ) && is_array( $api_ids ) ) {
+						if ( $enable_cache ) {
+							set_transient( $transient_key, $api_ids, $cache_ttl );
 						}
+						$ai_ids = array_slice( $api_ids, 0, $ai_count );
+					} else {
+						// Cache failure for 300 seconds to protect site speed
+						if ( $enable_cache ) {
+							set_transient( $transient_key, [], 300 );
+						}
+						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 					}
 				}
 			}
@@ -181,6 +176,10 @@ class Matching {
 		// 3. Compute cosine similarities in PHP
 		$scored = [];
 		$enable_llm = ! isset( $settings['enable_llm_reranking'] ) || ! empty( $settings['enable_llm_reranking'] );
+		if ( $enable_llm && self::has_unindexed_posts() ) {
+			\pishtop_log( 'INFO', 'Bypassing LLM re-ranking step for this request because database embedding index is not 100% complete. Reverting to local vector similarity matching instead.' );
+			$enable_llm = false;
+		}
 		$threshold = ( isset( $settings['similarity_threshold_percent'] ) ? intval( $settings['similarity_threshold_percent'] ) : 40 ) / 100.0;
 
 		foreach ( $candidates as $candidate ) {
