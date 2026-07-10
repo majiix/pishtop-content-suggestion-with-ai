@@ -93,23 +93,23 @@ class API {
 	/**
 	 * Fetch vector embedding from OpenRouter.
 	 */
-	public static function get_embedding( string $text, string $model ) {
+	public static function get_embedding( string $text, string $model, int $post_id = 0 ) {
 		if ( empty( $text ) ) {
 			return new \WP_Error( 'empty_text', 'No text provided for embedding.' );
 		}
 
 		$api_key = self::get_api_key();
 		if ( empty( $api_key ) ) {
-			\pishtop_log( 'WARNING', 'Embedding request aborted: OpenRouter API key is not configured.' );
+			\pishtop_log( 'WARNING', "Embedding generation aborted for post ID {$post_id}: OpenRouter API key is not configured in settings." );
 			return new \WP_Error( 'missing_key', 'OpenRouter API key is not configured.' );
 		}
 
 		if ( ! self::check_quota( 'embedding' ) ) {
-			\pishtop_log( 'WARNING', 'Embedding API request blocked: Daily quota reached.' );
+			\pishtop_log( 'WARNING', "Embedding API request blocked for post ID {$post_id}: Daily embedding API quota reached." );
 			return new \WP_Error( 'quota_exceeded', 'Daily embedding API quota reached.' );
 		}
 
-		\pishtop_log( 'DEBUG', 'Requesting embedding from OpenRouter', [ 'model' => $model, 'text_length' => strlen( $text ) ] );
+		\pishtop_log( 'DEBUG', "Requesting embedding vector for post ID {$post_id} from OpenRouter using model {$model}.", [ 'model' => $model, 'text_length' => strlen( $text ) ] );
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
@@ -130,7 +130,7 @@ class API {
 		] );
 
 		if ( is_wp_error( $response ) ) {
-			\pishtop_log( 'ERROR', 'Embedding API Call Failed', $response->get_error_message() );
+			\pishtop_log( 'ERROR', "Embedding API call failed for post ID {$post_id} using model {$model}: " . $response->get_error_message() );
 			return $response;
 		}
 
@@ -140,18 +140,18 @@ class API {
 
 		if ( 200 !== $code ) {
 			$error_msg = $data['error']['message'] ?? 'Unknown OpenRouter HTTP error code ' . $code;
-			\pishtop_log( 'ERROR', 'Embedding API Error Response', [ 'code' => $code, 'error' => $error_msg ] );
+			\pishtop_log( 'ERROR', "Embedding API error response for post ID {$post_id} using model {$model}: code {$code}, error: {$error_msg}", [ 'code' => $code, 'error' => $error_msg ] );
 			return new \WP_Error( 'api_error', $error_msg );
 		}
 
 		$vector = $data['data'][0]['embedding'] ?? null;
 		if ( ! is_array( $vector ) ) {
-			\pishtop_log( 'ERROR', 'Invalid embedding format returned from API', $data );
+			\pishtop_log( 'ERROR', "Invalid embedding format returned from API for post ID {$post_id} using model {$model}.", $data );
 			return new \WP_Error( 'invalid_response', 'Invalid response format from OpenRouter.' );
 		}
 
 		self::increment_quota( 'embedding' );
-		\pishtop_log( 'DEBUG', 'Embedding fetched successfully.' );
+		\pishtop_log( 'DEBUG', "Embedding vector successfully generated and retrieved for post ID {$post_id}." );
 
 		return $vector;
 	}
@@ -159,15 +159,15 @@ class API {
 	/**
 	 * Send candidates to OpenRouter LLM for semantic ranking.
 	 */
-	public static function rerank_candidates( array $current_post_data, array $candidates_data, string $model, int $max_recommendations ) {
+	public static function rerank_candidates( array $current_post_data, array $candidates_data, string $model, int $max_recommendations, int $post_id = 0 ) {
 		$api_key = self::get_api_key();
 		if ( empty( $api_key ) ) {
-			\pishtop_log( 'WARNING', 'Ranking request aborted: OpenRouter API key is not configured.' );
+			\pishtop_log( 'WARNING', "LLM ranking request aborted for post ID {$post_id}: OpenRouter API key is not configured in settings." );
 			return new \WP_Error( 'missing_key', 'OpenRouter API key is not configured.' );
 		}
 
 		if ( ! self::check_quota( 'ranking' ) ) {
-			\pishtop_log( 'WARNING', 'Ranking API request blocked: Daily quota reached.' );
+			\pishtop_log( 'WARNING', "LLM ranking API request blocked for post ID {$post_id}: Daily API quota limit reached." );
 			return new \WP_Error( 'quota_exceeded', 'Daily ranking API quota reached.' );
 		}
 
@@ -214,7 +214,7 @@ Rules:
 		$user_message .= "\nCandidate Posts to select from:\n";
 		$user_message .= $candidates_text;
 
-		\pishtop_log( 'DEBUG', 'Sending LLM ranking request to OpenRouter', [ 'model' => $model, 'candidates_count' => count( $candidates_data ) ] );
+		\pishtop_log( 'DEBUG', "Sending LLM ranking request to OpenRouter for post ID {$post_id} using model {$model}.", [ 'model' => $model, 'candidates_count' => count( $candidates_data ) ] );
 
 		$settings = get_option( 'pishtop_ai_settings', [] );
 		$api_timeout = isset( $settings['api_timeout'] ) ? intval( $settings['api_timeout'] ) : 20;
@@ -239,7 +239,7 @@ Rules:
 		] );
 
 		if ( is_wp_error( $response ) ) {
-			\pishtop_log( 'ERROR', 'LLM Ranking API Call Failed', $response->get_error_message() );
+			\pishtop_log( 'ERROR', "LLM Ranking API Call Failed for post ID {$post_id} using model {$model}: " . $response->get_error_message() );
 			return $response;
 		}
 
@@ -249,14 +249,14 @@ Rules:
 
 		if ( 200 !== $code ) {
 			$error_msg = $data['error']['message'] ?? 'Unknown OpenRouter Chat API HTTP error code ' . $code;
-			\pishtop_log( 'ERROR', 'LLM Ranking API Error Response', [ 'code' => $code, 'error' => $error_msg ] );
+			\pishtop_log( 'ERROR', "LLM Ranking API Error Response for post ID {$post_id} using model {$model}: code {$code}, error: {$error_msg}", [ 'code' => $code, 'error' => $error_msg ] );
 			return new \WP_Error( 'api_error', $error_msg );
 		}
 
 		$content = $data['choices'][0]['message']['content'] ?? '';
 		$content = trim( wp_strip_all_tags( $content ) );
 
-		\pishtop_log( 'DEBUG', 'LLM ranking response payload', [ 'content' => $content ] );
+		\pishtop_log( 'DEBUG', "LLM ranking response payload received for post ID {$post_id}.", [ 'content' => $content ] );
 
 		// Parse IDs: supports JSON array, comma-separated list, etc.
 		$parsed_ids = [];

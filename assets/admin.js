@@ -61,6 +61,40 @@ jQuery(document).ready(function($) {
 		window.location.hash = $(this).attr('href');
 	});
 
+	// Toggle LLM re-ranking options visibility
+	function toggleLlmRerankingFields() {
+		var isChecked = $('#pishtop_enable_llm_reranking').is(':checked');
+		if (isChecked) {
+			$('.row-llm-only').show();
+			$('.row-similarity-only').hide();
+		} else {
+			$('.row-llm-only').hide();
+			$('.row-similarity-only').show();
+		}
+	}
+
+	toggleLlmRerankingFields();
+
+	$(document).on('change', '#pishtop_enable_llm_reranking', function() {
+		toggleLlmRerankingFields();
+	});
+
+	// Toggle caching options visibility
+	function toggleCachingFields() {
+		var isChecked = $('#pishtop_enable_cache').is(':checked');
+		if (isChecked) {
+			$('.row-caching-only').show();
+		} else {
+			$('.row-caching-only').hide();
+		}
+	}
+
+	toggleCachingFields();
+
+	$(document).on('change', '#pishtop_enable_cache', function() {
+		toggleCachingFields();
+	});
+
 	// Warning warning box on embedding model change
 	$('#pishtop_embedding_model').on('change', function() {
 		var selected = $(this).val();

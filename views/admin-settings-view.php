@@ -138,7 +138,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<!-- TAB: GENERAL -->
 		<div id="tab-general" class="pishtop-tab-content active">
 			<div class="pishtop-card">
-				<h2><?php esc_html_e( 'OpenRouter Integration', 'pishtop-content-suggestion-with-ai' ); ?></h2>
+				<h2><?php esc_html_e( 'General', 'pishtop-content-suggestion-with-ai' ); ?></h2>
 				<div class="form-row">
 					<label for="pishtop_api_key"><?php esc_html_e( 'OpenRouter API Key', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
@@ -148,6 +148,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 
 				<div class="form-row">
+					<label><?php esc_html_e( 'Indexed Post Types', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap checkbox-group">
+						<?php
+						$pishtop_allowed_types = $settings['indexed_post_types'] ?? [ 'post' ];
+						$pishtop_post_types = get_post_types( [ 'public' => true ], 'objects' );
+						foreach ( $pishtop_post_types as $pishtop_post_type ) {
+							if ( 'attachment' === $pishtop_post_type->name ) {
+								continue;
+							}
+							$pishtop_checked = in_array( $pishtop_post_type->name, $pishtop_allowed_types, true ) ? 'checked' : '';
+							echo '<label class="checkbox-label"><input type="checkbox" name="pishtop_ai_settings[indexed_post_types][]" value="' . esc_attr( $pishtop_post_type->name ) . '" ' . esc_attr( $pishtop_checked ) . '> ' . esc_html( $pishtop_post_type->label ) . '</label>';
+						}
+						?>
+						<p class="description"><?php esc_html_e( 'Select which public post types to analyze and suggest content for.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<label><?php esc_html_e( 'Enable Caching', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" id="pishtop_enable_cache" name="pishtop_ai_settings[enable_cache]" value="1" <?php checked( $settings['enable_cache'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'If enabled, matching results are cached in transients to improve page load speed. If disabled, recommendations are generated and ranked in real-time on every page load.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row row-caching-only">
 					<label for="pishtop_cache_ttl"><?php esc_html_e( 'Cache Expiry (TTL)', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<div class="input-unit-group">
@@ -158,17 +187,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</select>
 						</div>
 						<p class="description"><?php esc_html_e( 'Duration recommendation matching results remain cached in transient database records.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					</div>
-				</div>
-
-				<div class="form-row">
-					<label><?php esc_html_e( 'Enable Caching', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap">
-						<label class="pishtop-switch-wrapper">
-							<input type="checkbox" name="pishtop_ai_settings[enable_cache]" value="1" <?php checked( $settings['enable_cache'] ?? 1 ); ?> class="pishtop-switch-input" />
-							<span class="pishtop-switch"></span>
-						</label>
-						<p class="description"><?php esc_html_e( 'If enabled, matching results are cached in transients to improve page load speed. If disabled, recommendations are generated and ranked in real-time on every page load.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
@@ -197,23 +215,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row action-row">
-					<label><?php esc_html_e( 'Maintenance Actions', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap pishtop-button-group">
-						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-rec-caches">
-							<span class="btn-spinner hidden"></span>
-							<?php esc_html_e( 'Clear Recommendation Caches', 'pishtop-content-suggestion-with-ai' ); ?>
-						</button>
-						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-embeddings">
-							<span class="btn-spinner hidden"></span>
-							<?php esc_html_e( 'Clear Embeddings Cache', 'pishtop-content-suggestion-with-ai' ); ?>
-						</button>
-					</div>
-				</div>
-			</div>
-
-			<div class="pishtop-card" style="margin-top: 20px;">
-				<h2><?php esc_html_e( 'Display & Thumbnail Settings', 'pishtop-content-suggestion-with-ai' ); ?></h2>
 				<div class="form-row">
 					<label for="pishtop_thumbnail_size"><?php esc_html_e( 'Default Thumbnail Size', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
@@ -228,6 +229,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 							?>
 						</select>
 						<p class="description"><?php esc_html_e( 'Image size used to retrieve featured image for {{image_url}} placeholder template layout.', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row action-row">
+					<label><?php esc_html_e( 'Maintenance Actions', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap pishtop-button-group">
+						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-rec-caches">
+							<span class="btn-spinner hidden"></span>
+							<?php esc_html_e( 'Clear Recommendation Caches', 'pishtop-content-suggestion-with-ai' ); ?>
+						</button>
+						<button type="button" class="pishtop-btn pishtop-btn-danger" id="pishtop-clear-embeddings">
+							<span class="btn-spinner hidden"></span>
+							<?php esc_html_e( 'Clear Embeddings Cache', 'pishtop-content-suggestion-with-ai' ); ?>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -257,7 +272,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-
 				<div class="form-row">
 					<label><?php esc_html_e( 'Embedding Source Fields', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap checkbox-group">
@@ -280,6 +294,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 
 				<div class="form-row">
+					<label><?php esc_html_e( 'Enable LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<label class="pishtop-switch-wrapper">
+							<input type="checkbox" id="pishtop_enable_llm_reranking" name="pishtop_ai_settings[enable_llm_reranking]" value="1" <?php checked( $settings['enable_llm_reranking'] ?? 1 ); ?> class="pishtop-switch-input" />
+							<span class="pishtop-switch"></span>
+						</label>
+						<p class="description"><?php esc_html_e( 'If enabled, candidates will be re-ranked using OpenRouter LLM. If disabled, candidates are recommended based purely on vector similarity (embedding phase).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row row-llm-only">
 					<label><?php esc_html_e( 'Ranking Source Fields', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap checkbox-group">
 						<?php
@@ -298,36 +323,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row">
-					<label><?php esc_html_e( 'Indexed Post Types', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap checkbox-group">
-						<?php
-						$pishtop_allowed_types = $settings['indexed_post_types'] ?? [ 'post' ];
-						$pishtop_post_types = get_post_types( [ 'public' => true ], 'objects' );
-						foreach ( $pishtop_post_types as $pishtop_post_type ) {
-							if ( 'attachment' === $pishtop_post_type->name ) {
-								continue;
-							}
-							$pishtop_checked = in_array( $pishtop_post_type->name, $pishtop_allowed_types, true ) ? 'checked' : '';
-							echo '<label class="checkbox-label"><input type="checkbox" name="pishtop_ai_settings[indexed_post_types][]" value="' . esc_attr( $pishtop_post_type->name ) . '" ' . esc_attr( $pishtop_checked ) . '> ' . esc_html( $pishtop_post_type->label ) . '</label>';
-						}
-						?>
-						<p class="description"><?php esc_html_e( 'Select which public post types to analyze and suggest content for.', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					</div>
-				</div>
-
-				<div class="form-row">
-					<label><?php esc_html_e( 'Enable LLM Re-ranking', 'pishtop-content-suggestion-with-ai' ); ?></label>
-					<div class="field-wrap">
-						<label class="pishtop-switch-wrapper">
-							<input type="checkbox" name="pishtop_ai_settings[enable_llm_reranking]" value="1" <?php checked( $settings['enable_llm_reranking'] ?? 1 ); ?> class="pishtop-switch-input" />
-							<span class="pishtop-switch"></span>
-						</label>
-						<p class="description"><?php esc_html_e( 'If enabled, candidates will be re-ranked using OpenRouter LLM. If disabled, candidates are recommended based purely on vector similarity (embedding phase).', 'pishtop-content-suggestion-with-ai' ); ?></p>
-					</div>
-				</div>
-
-				<div class="form-row">
+				<div class="form-row row-similarity-only">
 					<label for="pishtop_similarity_threshold_percent"><?php esc_html_e( 'Similarity Threshold (%)', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<div class="input-unit-group">
@@ -338,7 +334,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-llm-only">
 					<label for="pishtop_ranking_model"><?php esc_html_e( 'LLM Re-ranking Model', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<select id="pishtop_ranking_model" name="pishtop_ai_settings[ranking_model]" class="pishtop-model-select loading">
@@ -348,7 +344,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-llm-only">
 					<label for="pishtop_ranking_temperature"><?php esc_html_e( 'LLM Temperature', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<input type="number" id="pishtop_ranking_temperature" name="pishtop_ai_settings[ranking_temperature]" value="<?php echo esc_attr( $settings['ranking_temperature'] ?? 0.1 ); ?>" min="0.0" max="2.0" step="0.1" class="small-text" />
@@ -364,11 +360,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-llm-only">
 					<label for="pishtop_similarity_candidate_count"><?php esc_html_e( 'Similarity Candidate Count', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<input type="number" id="pishtop_similarity_candidate_count" name="pishtop_ai_settings[similarity_candidate_count]" value="<?php echo esc_attr( $settings['similarity_candidate_count'] ); ?>" min="5" max="200" class="small-text" />
 						<p class="description"><?php esc_html_e( 'Number of top cosine similarity matches sent to the LLM for final re-ranking (Default: 50).', 'pishtop-content-suggestion-with-ai' ); ?></p>
+					</div>
+				</div>
+
+				<div class="form-row row-llm-only">
+					<label for="pishtop_llm_shortfall_behavior"><?php esc_html_e( 'LLM Shortfall Behavior', 'pishtop-content-suggestion-with-ai' ); ?></label>
+					<div class="field-wrap">
+						<select id="pishtop_llm_shortfall_behavior" name="pishtop_ai_settings[llm_shortfall_behavior]">
+							<option value="fill_similarity" <?php selected( $settings['llm_shortfall_behavior'] ?? 'fill_similarity', 'fill_similarity' ); ?>><?php esc_html_e( 'Fill remaining slots with top vector similarity candidates', 'pishtop-content-suggestion-with-ai' ); ?></option>
+							<option value="hide" <?php selected( $settings['llm_shortfall_behavior'] ?? 'fill_similarity', 'hide' ); ?>><?php esc_html_e( 'Hide remaining slots (do not fill)', 'pishtop-content-suggestion-with-ai' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Action to take if the OpenRouter LLM re-ranking API returns fewer items than the requested recommendation count.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					</div>
 				</div>
 
@@ -391,7 +398,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 
-				<div class="form-row">
+				<div class="form-row row-llm-only">
 					<label for="pishtop_prompt_template"><?php esc_html_e( 'Custom Re-rank Prompt Instructions', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<div class="field-wrap">
 						<?php

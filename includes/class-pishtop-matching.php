@@ -61,11 +61,8 @@ class Matching {
 				$ai_ids = array_slice( $cached_ids, 0, $ai_count );
 			} else {
 				// Cache miss.
-				$is_cron_ranking = ! empty( $settings['enable_cron_ranking'] ) && ! Cron::$is_running_worker;
-
-				if ( self::has_unindexed_posts() || $is_cron_ranking ) {
-					$reason = self::has_unindexed_posts() ? 'Indexing' : 'Background ranking';
-					\pishtop_log( 'INFO', "{$reason} in progress. Returning native fallback directly for post {$post_id}." );
+				if ( self::has_unindexed_posts() ) {
+					\pishtop_log( 'INFO', "Index status incomplete: some published posts are missing embedding vectors. Falling back to native sorting for post ID {$post_id}." );
 					$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 				} else {
 					// Mutex Cache Stampede Protection
@@ -73,7 +70,7 @@ class Matching {
 					$is_locked = get_transient( $lock_key );
 
 					if ( $is_locked ) {
-						\pishtop_log( 'INFO', "Mutex lock active for post {$post_id}. Returning native fallback." );
+						\pishtop_log( 'INFO', "Mutex lock active for post ID {$post_id}: another request is currently generating recommendations for this post. Returning native fallback suggestions to avoid cache stampede." );
 						$ai_ids = self::get_native_fallback( $post_id, $ai_count, $post_type );
 					} else {
 						// Acquire Lock
@@ -104,11 +101,15 @@ class Matching {
 		}
 
 		// 3. Fetch fallback suggestions if requested count exceeds AI or cached results
+		$enable_llm = ! isset( $settings['enable_llm_reranking'] ) || ! empty( $settings['enable_llm_reranking'] );
+		$shortfall_behavior = $settings['llm_shortfall_behavior'] ?? 'fill_similarity';
 		$fallback_count = $count - count( $ai_ids );
 		$fallback_ids = [];
 		if ( $fallback_count > 0 ) {
-			// Exclude the current post ID and all IDs already recommended by AI
-			$fallback_ids = self::get_native_fallback( $post_id, $fallback_count, $post_type, $ai_ids );
+			// Only fetch native fallback if LLM is disabled, OR if shortfall behavior is set to fill
+			if ( ! $enable_llm || 'fill_similarity' === $shortfall_behavior ) {
+				$fallback_ids = self::get_native_fallback( $post_id, $fallback_count, $post_type, $ai_ids );
+			}
 		}
 
 		// 4. Sort each group independently to keep AI recommendations on top
@@ -151,12 +152,16 @@ class Matching {
 			if ( empty( $text ) ) {
 				return new \WP_Error( 'empty_text', 'No indexable content found.' );
 			}
-			$vector = API::get_embedding( $text, $emb_model );
+			$vector = API::get_embedding( $text, $emb_model, $post_id );
 			if ( is_wp_error( $vector ) ) {
+				\pishtop_log( 'ERROR', "Failed to generate embedding vector for post ID {$post_id} using model {$emb_model}: " . $vector->get_error_message() );
 				return $vector;
 			}
 			if ( ! $is_dynamic ) {
 				Database::save_embedding( $post_id, $lang, $emb_model, $vector );
+				\pishtop_log( 'INFO', "Generated and saved new embedding vector cache for post ID {$post_id} using model {$emb_model}." );
+			} else {
+				\pishtop_log( 'INFO', "Generated dynamic embedding vector for temporary context post ID {$post_id} using model {$emb_model}." );
 			}
 			$current_vector = $vector;
 		}
@@ -167,6 +172,7 @@ class Matching {
 
 		// 2. Fetch candidates matching language, post type, and active model
 		$candidates = Database::get_candidates( $post_id, $lang, $emb_model, $sql_ceiling, $post_type );
+		\pishtop_log( 'INFO', sprintf( "Fetched %d matching embedding candidates from database for post ID %d (language: %s, post type filter: %s).", count( $candidates ), $post_id, $lang, $post_type ?: 'any' ) );
 		if ( empty( $candidates ) ) {
 			return [];
 		}
@@ -194,7 +200,9 @@ class Matching {
 		if ( ! $enable_llm ) {
 			// Embedding-only phase: return top sorted candidates directly
 			$result_ids = array_column( $scored, 'id' );
-			return array_slice( $result_ids, 0, $count );
+			$final_ids = array_slice( $result_ids, 0, $count );
+			\pishtop_log( 'INFO', sprintf( "Vector similarity check completed for post ID %d. Found %d candidates above similarity threshold of %d%%. Selected top recommendations: [%s].", $post_id, count( $scored ), intval( $threshold * 100 ), implode( ',', $final_ids ) ) );
+			return $final_ids;
 		}
 
 		// Slice top similarity candidates
@@ -235,15 +243,21 @@ class Matching {
 		}
 
 		// Call re-rank API
-		$ranked_ids = API::rerank_candidates( $current_data, $candidates_data, $rank_model, $count );
+		\pishtop_log( 'INFO', sprintf( "Sending %d candidate suggestions to OpenRouter LLM (%s) for final re-ranking for post ID %d.", count( $candidates_data ), $rank_model, $post_id ) );
+		$ranked_ids = API::rerank_candidates( $current_data, $candidates_data, $rank_model, $count, $post_id );
 
 		if ( is_wp_error( $ranked_ids ) ) {
-			// Fallback to top cosine similarity results if LLM re-ranking fails
-			return array_slice( $top_ids, 0, $count );
+			$fallback_ids = array_slice( $top_ids, 0, $count );
+			\pishtop_log( 'WARNING', sprintf( "LLM re-ranking failed for post ID %d: %s. Falling back to top vector similarity matches: [%s].", $post_id, $ranked_ids->get_error_message(), implode( ',', $fallback_ids ) ) );
+			return $fallback_ids;
 		}
 
-		// 5. Fill remaining slots if API returned less than requested count
-		if ( count( $ranked_ids ) < $count ) {
+		\pishtop_log( 'INFO', sprintf( "LLM re-ranking completed successfully for post ID %d. Selected IDs: [%s].", $post_id, implode( ',', $ranked_ids ) ) );
+
+		// 5. Handle shortfall behavior if API returned less than requested count
+		$shortfall_behavior = $settings['llm_shortfall_behavior'] ?? 'fill_similarity';
+
+		if ( count( $ranked_ids ) < $count && 'fill_similarity' === $shortfall_behavior ) {
 			foreach ( $top_ids as $cand_id ) {
 				if ( ! in_array( $cand_id, $ranked_ids, true ) ) {
 					$ranked_ids[] = $cand_id;

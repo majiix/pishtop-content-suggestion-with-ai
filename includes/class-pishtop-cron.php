@@ -118,8 +118,9 @@ class Cron {
 				return;
 			}
 
-			// Clear cached recommendations for this post since content changed
+			// Clear cached recommendations and the outdated embedding vector since content changed
 			Matching::clear_cache( $post_id );
+			Database::delete_embedding( $post_id );
 			wp_cache_delete( 'pishtop_has_unindexed', 'pishtop_posts' );
 
 			// Schedule background worker event to generate embedding (delayed by settings value)
@@ -163,16 +164,16 @@ class Cron {
 				return; // Already up to date
 			}
 
-			$vector = API::get_embedding( $text, $emb_model );
+			$vector = API::get_embedding( $text, $emb_model, $post_id );
 			if ( is_wp_error( $vector ) ) {
-				\pishtop_log( 'ERROR', "Background indexing failed for post $post_id: " . $vector->get_error_message() );
+				\pishtop_log( 'ERROR', "Background save_post event indexing failed for post ID {$post_id} using model {$emb_model}: " . $vector->get_error_message() );
 				return;
 			}
 
 			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
-			\pishtop_log( 'INFO', "Background indexed post $post_id successfully." );
+			\pishtop_log( 'INFO', "Background save_post event successfully generated and cached embedding vector for post ID {$post_id} using model {$emb_model}." );
 		} catch ( \Throwable $e ) {
-			\pishtop_log( 'ERROR', 'Exception in background index post: ' . $e->getMessage() );
+			\pishtop_log( 'ERROR', "Exception in background index post ID {$post_id}: " . $e->getMessage() );
 		}
 	}
 
@@ -213,12 +214,29 @@ class Cron {
 			$new_minutes = isset( $value['cron_interval_minutes'] ) ? intval( $value['cron_interval_minutes'] ) : 15;
 			$force_reschedule = ( $old_minutes !== $new_minutes );
 			$this->schedule_cron_events( $value, $force_reschedule );
+
+			// Clear recommendation caches automatically when settings change so new options/model choices take effect immediately
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pishtop_rec_%'" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pishtop_rec_%'" );
+			wp_cache_delete( 'pishtop_ranked_posts_count', 'pishtop_posts' );
+			\pishtop_log( 'INFO', 'Recommendation caches cleared automatically due to plugin settings modification.' );
 		}
 	}
 
 	public function schedule_cron_events_on_added_option( $option, $value ) {
 		if ( 'pishtop_ai_settings' === $option ) {
 			$this->schedule_cron_events( $value );
+
+			// Clear recommendation caches automatically when settings are added
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pishtop_rec_%'" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pishtop_rec_%'" );
+			wp_cache_delete( 'pishtop_ranked_posts_count', 'pishtop_posts' );
 		}
 	}
 
@@ -314,13 +332,14 @@ class Cron {
 				continue;
 			}
 
-			$vector = API::get_embedding( $text, $emb_model );
+			$vector = API::get_embedding( $text, $emb_model, $post_id );
 			if ( is_wp_error( $vector ) ) {
-				\pishtop_log( 'ERROR', "Background cron indexing failed for post $post_id: " . $vector->get_error_message() );
+				\pishtop_log( 'ERROR', "Background periodic cron worker indexing failed for post ID {$post_id} using model {$emb_model}: " . $vector->get_error_message() );
 				continue;
 			}
 
 			Database::save_embedding( $post_id, Matching::get_post_language( $post_id ), $emb_model, $vector );
+			\pishtop_log( 'INFO', "Background periodic cron worker successfully generated and cached embedding vector for post ID {$post_id} using model {$emb_model}." );
 		}
 
 		wp_cache_delete( 'pishtop_indexed_posts_' . md5( serialize( $allowed_types ) ), 'pishtop_posts' );
@@ -332,12 +351,12 @@ class Cron {
 	private function run_ranking_worker( $settings ) {
 		$enable_cache = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
 		if ( ! $enable_cache ) {
-			\pishtop_log( 'INFO', 'Background ranking worker skipped: Recommendations caching is disabled.' );
+			\pishtop_log( 'INFO', 'Background cron recommendations ranking worker skipped: cache storage is disabled in plugin settings.' );
 			return;
 		}
 
 		if ( Matching::has_unindexed_posts() ) {
-			\pishtop_log( 'INFO', 'Background ranking worker skipped: Database has unindexed posts.' );
+			\pishtop_log( 'INFO', 'Background cron recommendations ranking worker skipped: database still contains published posts that lack embedding vectors.' );
 			return;
 		}
 

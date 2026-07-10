@@ -81,6 +81,7 @@ class Admin {
 				'ranking_fields'                => [ 'title', 'excerpt' ],
 				'ranking_model'                 => 'google/gemini-2.5-flash',
 				'similarity_candidate_count'    => 50,
+				'llm_shortfall_behavior'        => 'fill_similarity',
 				'max_pre_filtered_candidates'   => 500,
 				'max_recommendation_count'      => 5,
 				'daily_embedding_quota'         => 1000,
@@ -169,6 +170,7 @@ Rules:
 
 		$sanitized['ranking_model'] = isset( $input['ranking_model'] ) ? sanitize_text_field( $input['ranking_model'] ) : 'google/gemini-2.5-flash';
 		$sanitized['similarity_candidate_count'] = isset( $input['similarity_candidate_count'] ) ? max( 5, intval( $input['similarity_candidate_count'] ) ) : 50;
+		$sanitized['llm_shortfall_behavior'] = isset( $input['llm_shortfall_behavior'] ) && in_array( $input['llm_shortfall_behavior'], [ 'fill_similarity', 'hide' ], true ) ? $input['llm_shortfall_behavior'] : 'fill_similarity';
 		$sanitized['max_pre_filtered_candidates'] = isset( $input['max_pre_filtered_candidates'] ) ? max( 10, intval( $input['max_pre_filtered_candidates'] ) ) : 500;
 		$sanitized['max_recommendation_count'] = isset( $input['max_recommendation_count'] ) ? max( 1, intval( $input['max_recommendation_count'] ) ) : 5;
 		$sanitized['daily_embedding_quota'] = isset( $input['daily_embedding_quota'] ) ? max( 0, intval( $input['daily_embedding_quota'] ) ) : 1000;
