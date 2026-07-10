@@ -51,7 +51,8 @@ class Matching {
 		// 2. Fetch AI suggestions (either from cache or by querying API)
 		$ai_ids = [];
 		if ( $ai_count > 0 ) {
-			$transient_key = "pishtop_rec_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
+			$cache_ver     = get_option( 'pishtop_rec_cache_version', 1 );
+			$transient_key = "pishtop_rec_v{$cache_ver}_{$post_id}_{$template_id}_" . sanitize_key( $post_type );
 			$transient_key = apply_filters( 'pishtop_ai_recommendations_transient_key', $transient_key, $post_id, $template_id, $post_type );
 			
 			$enable_cache  = ! isset( $settings['enable_cache'] ) || ! empty( $settings['enable_cache'] );
@@ -405,8 +406,9 @@ class Matching {
 	 */
 	public static function clear_cache( int $post_id ) {
 		global $wpdb;
-		// Delete all transients matching pishtop_rec_{post_id}_*
-		$wildcard = '_transient_pishtop_rec_' . $post_id . '_%';
+		$cache_ver = get_option( 'pishtop_rec_cache_version', 1 );
+		// Delete all transients matching pishtop_rec_v{version}_{post_id}_*
+		$wildcard = '_transient_pishtop_rec_v' . $cache_ver . '_' . $post_id . '_%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wildcard ) );
 	}

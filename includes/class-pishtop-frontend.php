@@ -129,7 +129,9 @@ class Frontend {
 	 */
 	public function ajax_get_suggestions() {
 		try {
-			check_ajax_referer( 'pishtop_frontend_action', 'nonce' );
+			// Nonce validation is deliberately bypassed here to prevent related post widgets from breaking on pages 
+			// cached by page caching plugins (e.g. WP Rocket, LiteSpeed, Cloudflare) when nonces expire (12-24 hours).
+			// Safety checks are enforced below on public post statuses and input sanitization.
 
 			$post_id     = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 			$limit       = isset( $_POST['limit'] ) ? max( 1, intval( $_POST['limit'] ) ) : 5;

@@ -213,6 +213,10 @@ class Cron {
 			$force_reschedule = ( $old_minutes !== $new_minutes );
 			$this->schedule_cron_events( $value, $force_reschedule );
 
+			// Increment cache version to clear external object caches (e.g. Redis, Memcached)
+			$version = get_option( 'pishtop_rec_cache_version', 1 );
+			update_option( 'pishtop_rec_cache_version', intval( $version ) + 1 );
+
 			// Clear recommendation caches automatically when settings change so new options/model choices take effect immediately
 			global $wpdb;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -227,6 +231,10 @@ class Cron {
 	public function schedule_cron_events_on_added_option( $option, $value ) {
 		if ( 'pishtop_ai_settings' === $option ) {
 			$this->schedule_cron_events( $value );
+
+			// Increment cache version to clear external object caches
+			$version = get_option( 'pishtop_rec_cache_version', 1 );
+			update_option( 'pishtop_rec_cache_version', intval( $version ) + 1 );
 
 			// Clear recommendation caches automatically when settings are added
 			global $wpdb;

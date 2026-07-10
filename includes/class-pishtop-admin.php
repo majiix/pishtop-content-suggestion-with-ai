@@ -307,6 +307,10 @@ Rules:
 				wp_send_json_error( __( 'Unauthorized action.', 'pishtop-content-suggestion-with-ai' ) );
 			}
 
+			// Increment cache version to invalidate external object caches (e.g. Redis, Memcached)
+			$version = get_option( 'pishtop_rec_cache_version', 1 );
+			update_option( 'pishtop_rec_cache_version', intval( $version ) + 1 );
+
 			global $wpdb;
 			// Delete all recommendation transients
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

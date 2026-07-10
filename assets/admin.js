@@ -411,6 +411,18 @@ jQuery(document).ready(function($) {
 		});
 	});
 
+	// Restrict Template ID characters to lowercase alphanumeric, hyphens, and underscores
+	$(document).on('input blur', '.template-id-input', function() {
+		var val = $(this).val();
+		var sanitized = val.toLowerCase()
+			.replace(/[^a-z0-9_\-]/g, '-')
+			.replace(/-+/g, '-') // Collapse multiple hyphens
+			.replace(/^-+|-+$/g, ''); // Strip leading/trailing hyphens
+		if (val !== sanitized) {
+			$(this).val(sanitized);
+		}
+	});
+
 	// Template Repeater Actions
 	$('#pishtop-add-new-template').on('click', function(e) {
 		e.preventDefault();

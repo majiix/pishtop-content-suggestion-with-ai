@@ -144,7 +144,7 @@ class Database {
 		$post_type = ! empty( $post_type ) ? sanitize_key( $post_type ) : $post->post_type;
 
 		// Fetch term taxonomies (categories, tags, etc) for pre-filtering similarity ranking
-		$terms = wp_get_post_terms( $post_id, get_object_taxonomies( $post_type ), [ 'fields' => 'ids' ] );
+		$terms = wp_get_post_terms( $post_id, get_object_taxonomies( $post_type ), [ 'fields' => 'tt_ids' ] );
 
 		$select = "SELECT emb.post_id, emb.embedding";
 		$from   = "FROM $table_emb emb JOIN {$wpdb->posts} p ON emb.post_id = p.ID";
@@ -171,7 +171,7 @@ class Database {
 			$term_list = implode( ',', array_map( 'intval', $terms ) );
 			$from  .= " {$join_type} {$wpdb->term_relationships} tr ON p.ID = tr.object_id AND tr.term_taxonomy_id IN ($term_list)";
 			$select .= ", COUNT(tr.term_taxonomy_id) as term_matches";
-			$groupby = "GROUP BY emb.post_id";
+			$groupby = "GROUP BY emb.post_id, emb.embedding";
 			$orderby = "ORDER BY term_matches DESC, p.post_date DESC";
 		} else {
 			$select .= ", 0 as term_matches";
