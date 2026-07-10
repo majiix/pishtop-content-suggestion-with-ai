@@ -125,7 +125,6 @@ Rules:
 					'id'           => 'default_list',
 					'wrapper_html' => "<ul class=\"pishtop-suggestions-list\">\n\t{{items}}\n</ul>",
 					'item_html'    => "<li><a href=\"{{permalink}}\">{{title}}</a></li>",
-					'custom_css'   => ".pishtop-suggestions-list { list-style: square; margin: 15px 0; }",
 				],
 			] );
 		}
@@ -289,7 +288,6 @@ Rules:
 				'id'           => $id,
 				'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
 				'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
-				'custom_css'   => sanitize_textarea_field( $tpl['custom_css'] ?? '' ),
 				'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
 			];
 		}
@@ -499,7 +497,6 @@ Rules:
 					'id'           => $id,
 					'wrapper_html' => wp_kses_post( $tpl['wrapper_html'] ?? '' ),
 					'item_html'    => wp_kses_post( $tpl['item_html'] ?? '' ),
-					'custom_css'   => wp_strip_all_tags( $tpl['custom_css'] ?? '' ),
 					'post_type'    => sanitize_key( $tpl['post_type'] ?? '' ),
 				];
 			}

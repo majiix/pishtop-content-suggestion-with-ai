@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,12 +24,25 @@ To achieve maximum precision, the plugin performs local similarity pre-filtering
 * **OpenRouter.ai Integration:** Fetch high-quality text embeddings and perform LLM re-ranking using state-of-the-art models.
 * **Cost-Control Quotas:** Separate daily limits block embedding and ranking operations once exceeded, automatically falling back to native category recommendations to prevent surprise API charges. Aligned with local WordPress timezone settings.
 * **Mutex Lock Stampede Protection:** Restricts concurrent API calls during content updates, protecting your budgets under traffic surges.
-* **Display Layout Templates:** Create custom wrapper and item markup with CSS stylesheets right inside the settings dashboard. Include WooCommerce price and custom metadata variables instantly.
+* **Display Layout Templates:** Create custom wrapper and item markup right inside the settings dashboard. Include WooCommerce price and custom metadata variables instantly.
 * **Dynamic WooCommerce Contexts:** Automatically overrides generic page titles on Cart, Checkout, and Thank You pages with active cart products and purchased items to yield relevant recommendations.
 * **WooCommerce Out-of-Stock Filter:** Respects WooCommerce catalog visibility configurations, automatically hiding out-of-stock items from recommendations.
 * **User-Isolated Caching Keys:** Cache transients on WooCommerce pages vary dynamically using secure cart item hashes and order IDs, preventing cross-user caching leakage.
 * **Developer Extensibility Filters:** Hook into `pishtop_ai_post_text` to modify source text dynamically, and `pishtop_ai_recommendations_transient_key` to route custom transient cache partitions.
 * **Viewport Lazy Loading:** Trigger frontend AJAX suggestion loading via Intersection Observer, saving bandwidth and reducing API costs by querying only when the recommendations block becomes visible.
+
+== External Services ==
+
+This plugin relies on the third-party API service OpenRouter (openrouter.ai) to generate vector embeddings and perform LLM re-ranking of content suggestions.
+
+Specifically, it makes remote requests to:
+* **https://openrouter.ai/api/v1/embeddings** (Sends post title, excerpt, content, taxonomies, and/or custom fields to generate numeric representation vectors of the content when a post is created/updated or during background indexing).
+* **https://openrouter.ai/api/v1/chat/completions** (Sends post text and lists of recommendation candidate metadata to rank recommendations dynamically upon content retrieval).
+* **https://openrouter.ai/api/v1/models** (Fetches list of available LLM and embedding models in the admin settings dashboard).
+
+Use of these services is subject to the OpenRouter Terms of Service and Privacy Policy:
+* **OpenRouter Terms of Service:** https://openrouter.ai/terms
+* **OpenRouter Privacy Policy:** https://openrouter.ai/privacy
 
 == Installation ==
 
@@ -41,7 +54,7 @@ To achieve maximum precision, the plugin performs local similarity pre-filtering
 == Frequently Asked Questions ==
 
 = How do I display suggestions? =
-You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]`, the alias shortcode `[ai_related_posts]`, or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
+You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]`, the alias shortcode `[pishtop_ai_related_posts]`, or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
 
 = What API models does it support? =
 The plugin automatically pulls all available embedding and chat models from the OpenRouter API. You can choose any supported model (e.g., Google Gemini, OpenAI GPT, Cohere) in the Matching Engine settings tab.
@@ -99,7 +112,7 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 
 = Display Templates =
 * **Layout CSS Toggle:** Toggle loading built-in styles.
-* **Repeater List:** Create custom CSS/HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, `{{post_id}}`, `{{id}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price:key}}`), and Custom CSS.
+* **Repeater List:** Create custom HTML repeater template rows with custom Wrapper HTML (using `{{items}}`), Item HTML (using placeholders `{{title}}`, `{{permalink}}`, `{{image_url}}`, `{{excerpt}}`, `{{post_date}}`, `{{post_id}}`, `{{id}}`, custom fields `{{meta:key}}`, WooCommerce prices `{{price:key}}`).
 
 = Logging & Diagnostics =
 * **Enable Logging:** Toggle logging console.
@@ -109,6 +122,11 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.3.1 =
+* Remove Custom CSS styling from display templates and backend dashboard to comply with WordPress.org security policies regarding arbitrary code/styling insertion.
+* Rename the shortcode alias from `[ai_related_posts]` to `[pishtop_ai_related_posts]` to enforce proper prefixing standards.
+* Add dedicated External Services section to readme documenting integration, data transfer details, terms, and privacy policy links for OpenRouter.ai API services.
 
 = 1.2.0 =
 * Introduce Embedding-Only matching phase to completely bypass the OpenRouter LLM re-ranking step, saving on API costs and server overhead.

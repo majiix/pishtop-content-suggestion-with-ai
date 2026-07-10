@@ -742,10 +742,6 @@ Rules:
 										<textarea name="templates[<?php echo esc_attr( $pishtop_idx ); ?>][item_html]" rows="4" class="code-editor"><?php echo esc_textarea( $pishtop_tpl['item_html'] ); ?></textarea>
 									</div>
 								</div>
-								<div style="margin-top: 10px;">
-									<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
-									<textarea name="templates[<?php echo esc_attr( $pishtop_idx ); ?>][custom_css]" rows="2" class="code-editor large-text"><?php echo esc_textarea( $pishtop_tpl['custom_css'] ); ?></textarea>
-								</div>
 							</div>
 						</div>
 						<?php
@@ -779,7 +775,7 @@ Rules:
 					<h3>1. <?php esc_html_e( 'Shortcode & Block Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><?php esc_html_e( 'Use the shortcode anywhere on posts, pages, or widgets to display AI recommendations. Supports fallback rendering if offline.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap;">[pishtop_suggestions count="5" template="default_list"]</pre>
-					<p><strong><?php esc_html_e( 'Alias Shortcode:', 'pishtop-content-suggestion-with-ai' ); ?></strong> <code>[ai_related_posts]</code></p>
+					<p><strong><?php esc_html_e( 'Alias Shortcode:', 'pishtop-content-suggestion-with-ai' ); ?></strong> <code>[pishtop_ai_related_posts]</code></p>
 					<p><strong><?php esc_html_e( 'Attributes:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
 					<ul style="list-style: disc; padding-left: 20px; margin-top: 5px;">
 						<li><code>count</code> / <code>limit</code>: <?php esc_html_e( 'Max items to display (overrides default settings count).', 'pishtop-content-suggestion-with-ai' ); ?></li>
@@ -986,10 +982,6 @@ Rules:
 					<label><?php esc_html_e( 'Item HTML', 'pishtop-content-suggestion-with-ai' ); ?></label>
 					<textarea name="templates[{{idx}}][item_html]" rows="4" class="code-editor"><div class="related-item">&#10;&#9;<a href="{{permalink}}">{{title}}</a>&#10;</div></textarea>
 				</div>
-			</div>
-			<div style="margin-top: 10px;">
-				<label><?php esc_html_e( 'Custom CSS (Injected on Load)', 'pishtop-content-suggestion-with-ai' ); ?></label>
-				<textarea name="templates[{{idx}}][custom_css]" rows="2" class="code-editor large-text"></textarea>
 			</div>
 		</div>
 	</div>

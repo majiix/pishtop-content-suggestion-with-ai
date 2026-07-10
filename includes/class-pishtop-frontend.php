@@ -21,7 +21,7 @@ class Frontend {
 
 	private function __construct() {
 		add_shortcode( 'pishtop_suggestions', [ $this, 'render_suggestions_shortcode' ] );
-		add_shortcode( 'ai_related_posts', [ $this, 'render_suggestions_shortcode' ] );
+		add_shortcode( 'pishtop_ai_related_posts', [ $this, 'render_suggestions_shortcode' ] );
 		add_action( 'init', [ $this, 'register_gutenberg_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
 
@@ -74,18 +74,7 @@ class Frontend {
 			wp_enqueue_style( 'pishtop-frontend-css' );
 			wp_enqueue_script( 'pishtop-frontend-js' );
 
-			// Inject custom CSS from all registered templates
-			$templates = get_option( 'pishtop_ai_templates', [] );
-			$combined_css = '';
-			foreach ( $templates as $tpl ) {
-				if ( ! empty( $tpl['custom_css'] ) ) {
-					$combined_css .= "\n" . $tpl['custom_css'];
-				}
-			}
-
-			if ( ! empty( $combined_css ) ) {
-				wp_add_inline_style( 'pishtop-frontend-css', $combined_css );
-			}
+			// Custom CSS option removed to comply with WordPress directory policies.
 
 			$settings = get_option( 'pishtop_ai_settings', [] );
 			$default_count = isset( $settings['max_recommendation_count'] ) ? intval( $settings['max_recommendation_count'] ) : 5;

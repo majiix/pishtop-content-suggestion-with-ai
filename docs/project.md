@@ -25,7 +25,7 @@ WordPress plugin for AI-powered related post recommendations using OpenRouter.ai
 ## Current Features
 * Custom tables installation & management
 * Cost-control budgets counters with automatic midnight timezone resets
-* Custom template repeaters and CSS builders
+* Custom template HTML layout repeaters
 * Capped diagnostic logs paginator
 * Mutex lock transients (`pishtop_lock_{post_id}`) preventing stampedes
 * Single-event background indexes queues
