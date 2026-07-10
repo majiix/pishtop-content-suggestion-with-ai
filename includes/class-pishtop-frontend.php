@@ -133,10 +133,12 @@ class Frontend {
 			// cached by page caching plugins (e.g. WP Rocket, LiteSpeed, Cloudflare) when nonces expire (12-24 hours).
 			// Safety checks are enforced below on public post statuses and input sanitization.
 
+			// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
 			$post_id     = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 			$limit       = isset( $_POST['limit'] ) ? max( 1, intval( $_POST['limit'] ) ) : 5;
 			$template_id = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : 'default_list';
 			$post_type   = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
+			// phpcs:enable
 
 			if ( ! $post_id ) {
 				wp_send_json_error( 'Missing post ID' );
