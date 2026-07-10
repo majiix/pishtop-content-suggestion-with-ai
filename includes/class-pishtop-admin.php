@@ -244,14 +244,16 @@ Rules:
 		// Fetch count of distinct posts having cached rankings
 		$ranked_posts_count = wp_cache_get( 'pishtop_ranked_posts_count', 'pishtop_posts' );
 		if ( false === $ranked_posts_count ) {
-			$prefix = '_transient_pishtop_rec_';
+			$cache_ver = get_option( 'pishtop_rec_cache_version', 1 );
+			$prefix = "_transient_pishtop_rec_v{$cache_ver}_";
+			$prefix_len = strlen( $prefix );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$options = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $prefix . '%' ) );
 			
 			$post_ids = [];
 			if ( is_array( $options ) ) {
 				foreach ( $options as $opt_name ) {
-					$suffix = substr( $opt_name, strlen( $prefix ) );
+					$suffix = substr( $opt_name, $prefix_len );
 					$parts = explode( '_', $suffix );
 					if ( ! empty( $parts[0] ) && is_numeric( $parts[0] ) ) {
 						$post_ids[] = intval( $parts[0] );

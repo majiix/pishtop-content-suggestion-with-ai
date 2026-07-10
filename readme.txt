@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.6.2
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -122,6 +122,12 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.6.2 =
+* Skip clearing and purging the transient recommendation cache when the only setting modified is the `enable_cache` toggle.
+
+= 1.6.1 =
+* Fix active recommendations count parsing in admin settings controller to support version-prefixed transient keys, resolving false zero indicator readings.
 
 = 1.6.0 =
 * Fix background ranking worker transient version prefix check and key resolution, resolving worker execution block.

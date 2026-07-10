@@ -213,6 +213,15 @@ class Cron {
 			$force_reschedule = ( $old_minutes !== $new_minutes );
 			$this->schedule_cron_events( $value, $force_reschedule );
 
+			// Check if only enable_cache toggle changed
+			$old_clean = is_array( $old_value ) ? $old_value : [];
+			$new_clean = is_array( $value ) ? $value : [];
+			unset( $old_clean['enable_cache'], $new_clean['enable_cache'] );
+
+			if ( $old_clean === $new_clean ) {
+				return; // Do not clear caches or increment version if only enable_cache changed
+			}
+
 			// Increment cache version to clear external object caches (e.g. Redis, Memcached)
 			$version = get_option( 'pishtop_rec_cache_version', 1 );
 			update_option( 'pishtop_rec_cache_version', intval( $version ) + 1 );
