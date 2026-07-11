@@ -537,18 +537,13 @@ Example valid output (no good matches): []",
 	}
 
 	/**
-	 * Sanitizes template HTML allowing style tags besides default post tags.
+	 * Sanitizes template HTML using default post allowed tags.
 	 *
 	 * @param string $html Input HTML.
 	 * @return string Sanitized HTML.
 	 */
 	private function sanitize_template_html( string $html ): string {
-		$allowed_html = wp_kses_allowed_html( 'post' );
-		$allowed_html['style'] = [
-			'type'  => true,
-			'media' => true,
-		];
-		return wp_kses( $html, $allowed_html );
+		return wp_kses( $html, wp_kses_allowed_html( 'post' ) );
 	}
 
 	/**
