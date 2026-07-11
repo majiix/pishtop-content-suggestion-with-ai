@@ -416,31 +416,23 @@ Example valid output (no good matches): []";
 	 * Default fallback embedding models list.
 	 */
 	private static function get_fallback_embedding_models() {
-		$models = [
-			[ 'id' => 'openai/text-embedding-3-small', 'name' => 'openai/text-embedding-3-small' ],
-			[ 'id' => 'openai/text-embedding-3-large', 'name' => 'openai/text-embedding-3-large' ],
+		return [
 			[ 'id' => 'cohere/embed-english-v3.0', 'name' => 'cohere/embed-english-v3.0' ],
 			[ 'id' => 'cohere/embed-multilingual-v3.0', 'name' => 'cohere/embed-multilingual-v3.0' ],
+			[ 'id' => 'openai/text-embedding-3-large', 'name' => 'openai/text-embedding-3-large' ],
+			[ 'id' => 'openai/text-embedding-3-small', 'name' => 'openai/text-embedding-3-small' ],
 		];
-		usort( $models, function ( $a, $b ) {
-			return strcasecmp( $a['name'], $b['name'] );
-		} );
-		return $models;
 	}
 
 	/**
 	 * Default fallback ranking models list.
 	 */
 	private static function get_fallback_ranking_models() {
-		$models = [
+		return [
 			[ 'id' => 'google/gemini-2.5-flash', 'name' => 'google/gemini-2.5-flash' ],
 			[ 'id' => 'google/gemini-2.5-pro', 'name' => 'google/gemini-2.5-pro' ],
-			[ 'id' => 'openai/gpt-4o-mini', 'name' => 'openai/gpt-4o-mini' ],
 			[ 'id' => 'meta-llama/llama-3.1-8b-instruct', 'name' => 'meta-llama/llama-3.1-8b-instruct' ],
+			[ 'id' => 'openai/gpt-4o-mini', 'name' => 'openai/gpt-4o-mini' ],
 		];
-		usort( $models, function ( $a, $b ) {
-			return strcasecmp( $a['name'], $b['name'] );
-		} );
-		return $models;
 	}
 }

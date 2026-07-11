@@ -66,16 +66,8 @@ spl_autoload_register( function ( $class ) {
 		return;
 	}
 	$relative_class = strtolower( substr( $class, 11 ) );
-	$map = [
-		'database' => 'pishtop-db',
-		'api'      => 'pishtop-api',
-		'matching' => 'pishtop-matching',
-		'admin'    => 'pishtop-admin',
-		'frontend' => 'pishtop-frontend',
-		'cron'     => 'pishtop-cron',
-	];
-	$file_slug = isset( $map[ $relative_class ] ) ? $map[ $relative_class ] : str_replace( '_', '-', $relative_class );
-	$file = PISHTOP_AI_PATH . 'includes/class-' . $file_slug . '.php';
+	$file_slug      = ( 'database' === $relative_class ) ? 'db' : str_replace( '_', '-', $relative_class );
+	$file           = PISHTOP_AI_PATH . 'includes/class-pishtop-' . $file_slug . '.php';
 	if ( file_exists( $file ) ) {
 		require_once $file;
 	}
