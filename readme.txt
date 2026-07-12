@@ -4,7 +4,7 @@ Tags: related posts, ai recommendations, vector embeddings, semantic search, ope
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.6
+Stable tag: 1.6.7
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,12 +49,12 @@ Use of these services is subject to the OpenRouter Terms of Service and Privacy 
 1. Upload the plugin files to the `/wp-content/plugins/pishtop-content-suggestion-with-ai` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. Navigate to **Settings > AI Suggestions** to enter your OpenRouter API Key and configure your parameters.
-4. Use the shortcode `[pishtop_suggestions count="5" template="default_list"]` or the Gutenberg block "PishTop AI Suggestions" to insert suggestions on your pages/posts.
+4. Use the shortcode `[pishtop_suggestions count="5" template="default_list"]` to insert suggestions on your pages/posts.
 
 == Frequently Asked Questions ==
 
 = How do I display suggestions? =
-You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]` or by adding the Gutenberg block "PishTop AI Suggestions" to your posts.
+You can insert suggestions using the shortcode `[pishtop_suggestions count="5" template="default_list"]` on your posts.
 
 = What API models does it support? =
 The plugin automatically pulls all available embedding and chat models from the OpenRouter API. You can choose any supported model (e.g., Google Gemini, OpenAI GPT, Cohere) in the Matching Engine settings tab.
@@ -122,6 +122,9 @@ The log table is capped at 5,000 rows. Pruning prunes old rows down to a configu
 * **Cron Indexing Settings:** Customize cron embedding batch size, cron ranking batch size, cron worker interval, post save indexing delay, and active indexes safety queues.
 
 == Changelog ==
+
+= 1.6.7 =
+* Remove all Gutenberg block registration and code references.
 
 = 1.6.6 =
 * Remove custom style tag allowance in templates sanitization to prevent reviewer rejection.

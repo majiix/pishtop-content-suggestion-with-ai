@@ -21,7 +21,6 @@ class Frontend {
 
 	private function __construct() {
 		add_shortcode( 'pishtop_suggestions', [ $this, 'render_suggestions_shortcode' ] );
-		add_action( 'init', [ $this, 'register_gutenberg_block' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'register_assets' ] );
 
 		// AJAX frontend suggestions retrievals
@@ -41,28 +40,6 @@ class Frontend {
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'nonce'   => wp_create_nonce( 'pishtop_frontend_action' ),
 		] );
-	}
-
-	/**
-	 * Register Gutenberg block.
-	 */
-	public function register_gutenberg_block() {
-		register_block_type( 'pishtop-content-suggestion-with-ai/suggestions', [
-			'render_callback' => [ $this, 'render_block' ],
-			'attributes'      => [
-				'post_type' => [ 'type' => 'string', 'default' => 'post' ],
-				'count'     => [ 'type' => 'number', 'default' => 5 ],
-				'limit'     => [ 'type' => 'number', 'default' => 5 ],
-				'template'  => [ 'type' => 'string', 'default' => 'default_list' ],
-			],
-		] );
-	}
-
-	/**
-	 * Gutenberg block render callback.
-	 */
-	public function render_block( $attributes ) {
-		return $this->render_suggestions_shortcode( $attributes );
 	}
 
 	/**

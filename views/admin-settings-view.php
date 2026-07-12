@@ -805,7 +805,7 @@ Example valid output (no good matches): []";
 
 			<div class="help-section-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
 				<div>
-					<h3>1. <?php esc_html_e( 'Shortcode & Block Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
+					<h3>1. <?php esc_html_e( 'Shortcode Usage', 'pishtop-content-suggestion-with-ai' ); ?></h3>
 					<p><?php esc_html_e( 'Use the shortcode anywhere on posts, pages, or widgets to display AI recommendations. Supports fallback rendering if offline.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 					<pre style="background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; white-space: pre-wrap;">[pishtop_suggestions count="5" template="default_list"]</pre>
 					<p><strong><?php esc_html_e( 'Attributes:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
@@ -814,8 +814,6 @@ Example valid output (no good matches): []";
 						<li><code>template</code>: <?php esc_html_e( 'Template ID handle defined under Display Templates.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 						<li><code>post_id</code>: <?php esc_html_e( 'Optionally retrieve related items for a specific post instead of the current loop post.', 'pishtop-content-suggestion-with-ai' ); ?></li>
 					</ul>
-					<p style="margin-top: 10px;"><strong><?php esc_html_e( 'Gutenberg Block:', 'pishtop-content-suggestion-with-ai' ); ?></strong></p>
-					<p><?php esc_html_e( 'Insert the "PishTop AI Suggestions" block in Gutenberg. Includes block settings for Count, Display Template, and target post type.', 'pishtop-content-suggestion-with-ai' ); ?></p>
 				</div>
 
 				<div>
